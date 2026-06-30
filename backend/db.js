@@ -3,8 +3,8 @@
  * Replaces better-sqlite3 to bypass native compilation issues on Windows / Node 24.
  * Exposes the exact same interface (q.<query>.get() and q.<query>.run()).
  *
- * [FIX C3] Write operations go through a per-file async queue so concurrent
- * calls never interleave and corrupt the JSON.
+ * Modified to perform all operations synchronously. This ensures complete 
+ * transaction isolation and prevents race conditions under quick consecutive requests.
  */
 const path = require('path');
 const fs   = require('fs');
@@ -15,51 +15,53 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const USERS_FILE    = path.join(DATA_DIR, 'users_db.json');
 const PAYMENTS_FILE = path.join(DATA_DIR, 'payments_db.json');
 
+/**
+ * Reads a JSON file synchronously. Returns an empty array if file does not exist or has invalid JSON.
+ */
 function readJSON(file) {
   if (!fs.existsSync(file)) return [];
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-  catch (_) { return []; }
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (err) {
+    console.error(`[db] Error reading JSON from ${file}:`, err);
+    return [];
+  }
 }
 
-// --- Write-lock queue ([FIX C3]) ---
-// Each file gets its own promise chain so writes are always sequential.
-const writeQueues = new Map();
-
+/**
+ * Writes data to a JSON file synchronously.
+ */
 function writeJSON(file, data) {
-  // Chain onto the existing promise for this file (or start fresh)
-  const prev = writeQueues.get(file) || Promise.resolve();
-  const next = prev.then(() => {
+  try {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
-  }).catch((err) => {
-    console.error('[db] writeJSON error:', err);
-  });
-  // Keep only the tail of the chain to avoid memory buildup
-  writeQueues.set(file, next.catch(() => {}));
-  return next;
+  } catch (err) {
+    console.error(`[db] Error writing JSON to ${file}:`, err);
+  }
 }
 
-// In-memory array of users and payments, backed by JSON files
-let users = readJSON(USERS_FILE);
-let payments = readJSON(PAYMENTS_FILE);
-
+// Database query interfaces matching the SQLite queries
 const q = {
   findUserByUsername: {
     get(username) {
+      const users = readJSON(USERS_FILE);
       return users.find(u => u.username === username);
     }
   },
   findUserByEmail: {
     get(email) {
+      const users = readJSON(USERS_FILE);
       return users.find(u => u.email === email);
     }
   },
   findUserById: {
     get(id) {
+      const users = readJSON(USERS_FILE);
       return users.find(u => u.id === Number(id));
     }
   },
   insertUser: {
     run(name, username, email, password_hash) {
+      const users = readJSON(USERS_FILE);
       const id = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
       const newUser = {
         id,
@@ -78,6 +80,7 @@ const q = {
   },
   grantPremium: {
     run(adFreeUntil, userId) {
+      const users = readJSON(USERS_FILE);
       const user = users.find(u => u.id === Number(userId));
       if (user) {
         user.has_premium = 1;
@@ -88,6 +91,7 @@ const q = {
   },
   insertPayment: {
     run(user_id, razorpay_order_id, amount, status, is_mock) {
+      const payments = readJSON(PAYMENTS_FILE);
       const id = payments.length ? Math.max(...payments.map(p => p.id)) + 1 : 1;
       const newPayment = {
         id,
@@ -106,6 +110,7 @@ const q = {
   },
   completePayment: {
     run(paymentId, status, orderId) {
+      const payments = readJSON(PAYMENTS_FILE);
       const payment = payments.find(p => p.razorpay_order_id === orderId);
       if (payment) {
         payment.razorpay_payment_id = paymentId;

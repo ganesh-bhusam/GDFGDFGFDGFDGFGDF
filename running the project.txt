@@ -1,0 +1,125 @@
+### How to run **AdvScribblw‑with‑backend** locally
+
+Below is a step‑by‑step guide that works on Windows (PowerShell) for the current repository layout:
+
+---
+
+## 1. Open two terminal windows (or two PowerShell tabs)
+
+You’ll need one for the **backend** and one for the **frontend** so they can run side‑by‑side.
+
+---
+
+## 2. Install dependencies (first time only)
+
+### Backend
+```powershell
+cd "C:\Users\PK'S\OneDrive\Desktop\AdvScribblw-with-backend-main\backend"
+npm install
+```
+
+### Frontend
+```powershell
+cd "C:\Users\PK'S\OneDrive\Desktop\AdvScribblw-with-backend-main\frontend"
+npm install
+```
+
+> **Why?** Both `package.json` files list the required Node modules (Express, Socket.io, etc.). `npm install` creates the `node_modules` folder and resolves the exact versions.
+
+---
+
+## 3. Configure environment variables (optional but recommended)
+
+A `.env` file already exists in `backend/`.  
+If you want to change the port, JWT secret, or Razorpay keys, edit that file:
+
+```powershell
+notepad .env   # or any editor you prefer
+```
+
+Typical entries (already present):
+
+```
+PORT=8001
+JWT_SECRET=dev_jwt_secret_key_987654321_CHANGE_IN_PROD
+PAYMENT_MOCK_MODE=0
+RAZORPAY_KEY_ID=rzp_test_T6fWxjbW3UGGAU
+RAZORPAY_KEY_SECRET=NuAYGvaEe3ztKDUGQk7hg375
+SUPPORT_EMAIL=support@advscribbl.app
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8001
+```
+
+> **Tip:** In production you’ll replace the dev values with real secrets.
+
+---
+
+## 4. Start the servers
+
+### Backend (run in the *backend* terminal)
+```powershell
+npm run dev          # or: node server.js
+```
+You should see something like:
+```
+[skribbl] backend listening on :8001
+[skribbl] allowed origins: http://localhost:3000, http://localhost:8001
+```
+
+### Frontend (run in the *frontend* terminal)
+```powershell
+npm start           # or: node static-server.js
+```
+You should see:
+```
+[frontend] static server listening on http://0.0.0.0:3000
+```
+
+Both processes keep running, printing logs to the respective terminals. Leave them open while you work.
+
+---
+
+## 5. Open the application in a browser
+
+Navigate to:
+
+```
+http://localhost:3000
+```
+
+The static server will serve `frontend/index.html`.  
+That page loads the JavaScript that connects to the backend via **socket.io** at `http://localhost:8001`.  
+
+You should now see the **Skribbl**‑style drawing lobby. Create a room, invite a friend (share the URL), and start playing.
+
+---
+
+## 6. (Optional) Stopping the servers
+
+When you’re done, simply close the two terminal windows **or** press `Ctrl +C` in each to terminate the Node processes gracefully.
+
+---
+
+### Quick cheat‑sheet (copy‑paste)
+
+```powershell
+# ---------- Backend ----------
+cd "C:\Users\PK'S\OneDrive\Desktop\AdvScribblw-with-backend-main\backend"
+npm install      # first run only
+npm run dev      # start backend on http://localhost:8001
+
+# ---------- Frontend ----------
+cd "C:\Users\PK'S\OneDrive\Desktop\AdvScribblw-with-backend-main\frontend"
+npm install      # first run only
+npm start        # start static server on http://localhost:3000
+```
+
+---
+
+## TL;DR
+
+1. `npm install` in **both** `backend` and `frontend` (once).  
+2. `npm run dev` in `backend`.  
+3. `npm start` in `frontend`.  
+4. Open `http://localhost:3000` in a browser.
+
+That’s all you need to get the project up and running locally. Let me know if you hit any errors or need help configuring a production build!

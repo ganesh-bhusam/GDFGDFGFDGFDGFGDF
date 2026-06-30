@@ -79,22 +79,76 @@ body {
    GLASS PANEL UTILITY
    ========================================================= */
 .glass-panel {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
-  box-shadow: var(--shadow-card);
   position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 4px solid #8d5926;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, .45) 0%, rgba(255, 255, 255, .18) 8%, rgba(255, 255, 255, 0) 18%),
+    linear-gradient(to top, rgba(0, 0, 0, .18), transparent 30%),
+    linear-gradient(to right, rgba(255, 255, 255, .15), transparent 14%),
+    linear-gradient(to left, rgba(0, 0, 0, .14), transparent 15%),
+    repeating-linear-gradient(90deg, #f2c889 0px, #efc17e 5px, #e6b470 9px, #f0c582 15px, #e0aa66 24px, #efc27f 34px),
+    linear-gradient(180deg, #efc98c, #dba564);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, .35),
+    inset 0 2px rgba(255, 255, 255, .55),
+    inset 3px 0 rgba(255, 255, 255, .15),
+    inset -3px 0 rgba(0, 0, 0, .18),
+    inset 0 -6px rgba(0, 0, 0, .22);
+  outline: 2px solid rgba(255, 255, 255, .10);
+  outline-offset: -10px;
+  filter: drop-shadow(0 18px 35px rgba(0, 0, 0, .28));
+  color: #4a2c11;
 }
 
 .glass-panel::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  border-radius: inherit;
+  opacity: .10;
+  background: repeating-linear-gradient(110deg, transparent 0, transparent 18px, rgba(75, 40, 15, .22) 20px, transparent 21px);
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 50%);
+}
+
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .12;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .03) 1px, transparent 2px, transparent 6px, rgba(0, 0, 0, .05) 8px, transparent 11px);
+  pointer-events: none;
+}
+
+/* Adjust screws inside regular panels so they are smaller and fit neatly in corners */
+.glass-panel .screw {
+  width: 14px;
+  height: 14px;
+}
+
+.glass-panel .screw::before {
+  width: 8px;
+  height: 1.5px;
+}
+
+.glass-panel .screw.tl {
+  top: 10px;
+  left: 10px;
+}
+
+.glass-panel .screw.tr {
+  top: 10px;
+  right: 10px;
+}
+
+.glass-panel .screw.bl {
+  bottom: 10px;
+  left: 10px;
+}
+
+.glass-panel .screw.br {
+  bottom: 10px;
+  right: 10px;
 }
 
 /* =========================================================
@@ -773,11 +827,11 @@ select option {
 }
 
 .center-panel {
-  max-width: 450px;
+  max-width: 520px;
   width: 100%;
-  height: 356px;
-  padding: 12px;
-  border-radius: var(--radius);
+  min-height: 540px;
+  padding: 28px 28px 32px;
+  border-radius: 34px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -959,11 +1013,12 @@ select option {
     "players canvas    chat"
     "players toolbar   chat";
   grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(280px, 340px);
-  grid-template-rows: auto minmax(380px, 1fr) auto;
+  grid-template-rows: auto minmax(520px, 1fr) auto;
   gap: 14px;
   max-width: 1700px;
   margin: 0 auto;
-  height: calc(100vh - 28px);
+  min-height: calc(100vh - 28px);
+  height: auto;
 }
 
 #game-bar {
@@ -2501,4 +2556,316 @@ select option {
 
 .join-btn:active {
   transform: translateY(2px);
+}
+
+/* =========================================================
+   WOOD PANEL CONTENT CONTRAST & VISIBILITY OVERRIDES
+   ========================================================= */
+
+.glass-panel h1,
+.glass-panel h2,
+.glass-panel h3,
+.glass-panel h4,
+.glass-panel h5,
+.glass-panel h6 {
+  color: #3b200a;
+}
+
+.glass-panel p,
+.glass-panel span,
+.glass-panel div,
+.glass-panel li,
+.glass-panel b {
+  /* Only apply default text color if it's not overridden by specific styles */
+  color: inherit;
+}
+
+.glass-panel ul,
+.glass-panel ol,
+.glass-panel li {
+  color: #4a2c11;
+}
+
+.glass-panel b {
+  color: #1a0f00;
+}
+
+/* Form controls (Inputs, Selects, Textareas) inside wood panels */
+.glass-panel input,
+.glass-panel select,
+.glass-panel textarea {
+  background: #fffdf9;
+  border: 2px solid #8d5926;
+  color: #4a2c11;
+}
+
+.glass-panel input::placeholder,
+.glass-panel textarea::placeholder {
+  color: #a08060;
+}
+
+.glass-panel input:focus,
+.glass-panel select:focus,
+.glass-panel textarea:focus {
+  border-color: #5f3814;
+  box-shadow: 0 0 0 3px rgba(141, 89, 38, 0.25);
+}
+
+/* Auth Card Overrides */
+.glass-panel .field-label {
+  color: #4a2c11;
+}
+
+.glass-panel .auth-error {
+  color: #b91c1c;
+}
+
+.glass-panel .auth-link {
+  color: #b45309;
+}
+
+.glass-panel .auth-link:hover {
+  color: #78350f;
+}
+
+.glass-panel .brand-tag {
+  color: #5f3814;
+}
+
+.glass-panel .auth-tabs {
+  background: rgba(0, 0, 0, 0.08);
+  border: 2px solid #8d5926;
+}
+
+.glass-panel .auth-tab {
+  color: #5f3814;
+}
+
+.glass-panel .auth-tab.active {
+  background: #8d5926;
+  color: #fff;
+}
+
+/* Game Bar Overrides */
+.glass-panel .game-bar-clock,
+.glass-panel .game-bar-round {
+  background: #fffdf9;
+  border: 2px solid #8d5926;
+  color: #4a2c11;
+}
+
+.glass-panel .game-bar-clock .text {
+  color: #b45309;
+}
+
+.glass-panel #game-word .description {
+  color: #7b583a;
+}
+
+.glass-panel #game-word .word {
+  color: #b45309;
+}
+
+.glass-panel .game-bar-btn {
+  background: #fffdf9;
+  border: 2px solid #8d5926;
+  color: #4a2c11;
+}
+
+.glass-panel .game-bar-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.glass-panel .game-bar-btn.danger {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.glass-panel .game-bar-btn.danger:hover {
+  background: #fee2e2;
+}
+
+/* Player Scoreboard Overrides */
+.glass-panel .panel-title {
+  color: #5f3814;
+  border-bottom: 2px solid #8d5926;
+}
+
+.glass-panel .player-card {
+  background: #fffdf9;
+  border: 2px solid #8d5926;
+  color: #4a2c11;
+}
+
+.glass-panel .player-card.drawer {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.glass-panel .player-card.me {
+  border-color: var(--primary);
+}
+
+.glass-panel .player-card.guessed {
+  background: #d1fae5;
+  border-color: #059669;
+}
+
+.glass-panel .player-name {
+  color: #4a2c11;
+}
+
+.glass-panel .player-score {
+  color: #7b583a;
+}
+
+.glass-panel .player-rank {
+  color: #4a2c11;
+}
+
+/* Chat Overrides */
+.glass-panel .chat-content {
+  background: #fffdf9;
+  border: 2px solid #8d5926;
+  color: #4a2c11;
+}
+
+.glass-panel .chat-msg {
+  color: #4a2c11;
+}
+
+.glass-panel .chat-msg .author {
+  color: #2b1807;
+}
+
+.glass-panel .chat-msg.system {
+  color: #7b583a;
+}
+
+.glass-panel .chat-msg.guess-correct {
+  background: rgba(16, 185, 129, 0.18);
+  color: #0c5435;
+}
+
+.glass-panel .chat-msg.guess-close {
+  background: rgba(245, 158, 11, 0.18);
+  color: #854d0e;
+}
+
+.glass-panel .chat-msg.join {
+  color: #047857;
+}
+
+.glass-panel .chat-msg.leave {
+  color: #b91c1c;
+}
+
+/* Drawing Toolbar Overrides */
+.glass-panel .sizes {
+  background: rgba(0, 0, 0, 0.08);
+  border: 2px solid #8d5926;
+}
+
+.glass-panel .size-btn .dot {
+  background: #4a2c11;
+}
+
+.glass-panel .size-btn.active .dot {
+  background: #FFF;
+}
+
+.glass-panel .size-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.glass-panel .size-btn.active {
+  background: var(--primary);
+}
+
+.glass-panel .toolbar-group-tools,
+.glass-panel .toolbar-group-actions {
+  background: rgba(0, 0, 0, 0.08);
+  border: 2px solid #8d5926;
+}
+
+.glass-panel .tool-btn {
+  color: #4a2c11;
+}
+
+.glass-panel .tool-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.glass-panel .tool-btn.active {
+  background: var(--primary);
+  color: #FFF;
+}
+
+.glass-panel .premium-toggle-wrapper {
+  background: #fef3c7;
+  border: 2px solid #d97706;
+}
+
+.glass-panel .toggle-label {
+  color: #b45309;
+}
+
+.glass-panel .premium-toggle-switch {
+  background: rgba(0, 0, 0, 0.15);
+  border: 2px solid #8d5926;
+}
+
+/* Payment Card & Modal Overrides */
+.glass-panel.payment-card .lead {
+  color: #5f3814;
+}
+
+.glass-panel.payment-card .benefits li {
+  color: #4a2c11;
+}
+
+.glass-panel.payment-card .payment-note {
+  color: #7b583a;
+}
+
+.glass-panel .modal-close {
+  background: #fffdf9;
+  border: 2px solid #8d5926;
+  color: #4a2c11;
+}
+
+.glass-panel .modal-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* Preserve overlay styling inside canvas */
+.glass-panel .overlay,
+.glass-panel .overlay-content,
+.glass-panel .overlay-content * {
+  color: var(--text-main);
+}
+
+.glass-panel .overlay-content .room-hint {
+  color: var(--text-dim);
+}
+
+.glass-panel .overlay-content .settings-grid label {
+  color: var(--text-muted);
+}
+
+.glass-panel .overlay-content .custom-words-label {
+  color: var(--text-muted);
+}
+
+.glass-panel .overlay-content .lobby-avatar-label {
+  color: #a5b4fc !important;
+}
+
+.glass-panel .overlay-content .reveal .reason {
+  color: var(--text-muted);
+}
+
+.glass-panel .overlay-content .reveal .word {
+  color: var(--accent-gold);
 }
