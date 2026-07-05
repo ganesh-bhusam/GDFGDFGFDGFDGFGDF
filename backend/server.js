@@ -100,13 +100,14 @@ app.get('/api/languages',(req, res) => res.json({ languages: getLanguageList() }
 // POST /api/play — matchmaking entry point
 app.post('/api/play', (req, res) => {
   const langId = parseInt(req.body.lang ?? '0', 10);
+  const modeId = String(req.body.mode || 'all');
   const roomId = req.body.id;
   let room;
   if (roomId) {
     room = engine.getRoom(String(roomId));
     if (!room) return res.status(404).json({ error: 'Room not found' });
   } else {
-    room = engine.publicRoomForLang(langId) || engine.createPublic(langId);
+    room = engine.publicRoomForLang(langId, null, modeId) || engine.createPublic(langId, modeId);
   }
   return res.json({ roomId: room.id, type: room.type });
 });
@@ -114,7 +115,8 @@ app.post('/api/play', (req, res) => {
 // POST /api/private — create a private room and return invite id
 app.post('/api/private', (req, res) => {
   const langId = parseInt(req.body.lang ?? '0', 10);
-  const room = engine.createPrivate(langId);
+  const modeId = String(req.body.mode || 'all');
+  const room = engine.createPrivate(langId, modeId);
   return res.json({ roomId: room.id });
 });
 
@@ -168,6 +170,7 @@ io.on('connection', (socket) => {
   socket.on('login', (payload = {}) => {
     try {
       const langId     = parseInt(payload.lang ?? '0', 10);
+      const modeId     = String(payload.mode || 'all');
       const joinId     = payload.join;
       const create     = payload.create === 1;
       const playerName = String(payload.name || socket.realName || 'Player').slice(0, 21);
@@ -175,7 +178,7 @@ io.on('connection', (socket) => {
 
       let room;
       if (create) {
-        room = engine.createPrivate(langId);
+        room = engine.createPrivate(langId, modeId);
       } else if (joinId && joinId !== 0 && joinId !== '0') {
         room = engine.getRoom(String(joinId));
         if (!room)                               return socket.emit('joinerr', 1);
@@ -189,7 +192,7 @@ io.on('connection', (socket) => {
           console.log(`[cleanup] Cancelled cleanup for Room ${room.id} (player joined)`);
         }
       } else {
-        room = engine.publicRoomForLang(langId, socket.userId) || engine.createPublic(langId);
+        room = engine.publicRoomForLang(langId, socket.userId, modeId) || engine.createPublic(langId, modeId);
       }
 
       const player = {

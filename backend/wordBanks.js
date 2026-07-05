@@ -144,6 +144,11 @@ const WORD_BANKS = {
   8: { code: 'malayalaglish', name: 'Malayalaglish', words: MALAYALAGLISH },
 };
 
+// Movie Word Banks (Placeholders to be filled later by the user)
+const MOVIE_BANKS = {
+  0: { code: 'english_movies', name: 'English Movies', words: ['the matrix', 'avatar', 'inception', 'titanic', 'jurassic park'] },
+};
+
 // --- DYNAMICALLY LOAD NEW WORD BANKS ---
 try {
   const BANKS_DIR = path.join(__dirname, 'data', 'word_banks');
@@ -192,8 +197,11 @@ function getLanguageList() {
   }));
 }
 
-function getWords(langId, count = 3) {
-  const bank = WORD_BANKS[langId] || WORD_BANKS[0];
+function getWords(langId, count = 3, modeId = 'all') {
+  let bank = WORD_BANKS[langId] || WORD_BANKS[0];
+  if (modeId === 'movies' && MOVIE_BANKS[langId]) {
+    bank = MOVIE_BANKS[langId];
+  }
   const words = bank.words;
   const picks = new Set();
   while (picks.size < count && picks.size < words.length) {
@@ -202,4 +210,4 @@ function getWords(langId, count = 3) {
   return Array.from(picks);
 }
 
-module.exports = { WORD_BANKS, getLanguageList, getWords };
+module.exports = { WORD_BANKS, MOVIE_BANKS, getLanguageList, getWords };

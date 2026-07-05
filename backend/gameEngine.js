@@ -18,6 +18,7 @@ class Room {
     this.io = io;
     this.id = opts.id;
     this.type = opts.type; // 0=public, 1=private
+    this.modeId = opts.modeId || 'all'; // 'all' or 'movies'
     this.settings = opts.settings || [...DEFAULT_SETTINGS];
     this.players = []; // {id, name, avatar, score, guessed, flags, bot, socketId, userId, hasPremium}
     this.ownerId = null;
@@ -654,7 +655,7 @@ class Room {
       return Array.from(picks);
     }
     // Mix: half custom (if any), half language bank
-    const base = getWords(this.settings[0], count);
+    const base = getWords(this.settings[0], count, this.modeId);
     if (this.customWords.length === 0) return base;
     const custom = [...this.customWords].sort(() => Math.random() - 0.5).slice(0, Math.ceil(count / 2));
     const merged = [...new Set([...custom, ...base])].slice(0, count);
@@ -734,25 +735,26 @@ class GameEngine {
     this.rooms = new Map();
     this.deletionTimeouts = new Map(); // [FIX H4] Always initialized — never undefined
   }
-  publicRoomForLang(langId, userId) {
+  publicRoomForLang(langId, userId, modeId = 'all') {
     for (const room of this.rooms.values()) {
       if (room.type !== 0) continue;
       if (room.settings[0] !== langId) continue;
+      if (room.modeId !== modeId) continue;
       if (room.players.length >= room.settings[1]) continue;
       if (userId != null && (room.bannedUserIds.has(userId) || room.kickedUserIds.has(userId))) continue;
       return room;
     }
     return null;
   }
-  createPublic(langId) {
+  createPublic(langId, modeId = 'all') {
     const id = 'pub_' + randomId();
-    const room = new Room(this.io, { id, type: 0, settings: [langId, 8, 80, 3, 3, 2, 0, 0] });
+    const room = new Room(this.io, { id, type: 0, modeId, settings: [langId, 8, 80, 3, 3, 2, 0, 0] });
     this.rooms.set(id, room);
     return room;
   }
-  createPrivate(langId = 0) {
+  createPrivate(langId = 0, modeId = 'all') {
     const id = randomId();
-    const room = new Room(this.io, { id, type: 1, settings: [langId, 8, 80, 3, 3, 2, 0, 0] });
+    const room = new Room(this.io, { id, type: 1, modeId, settings: [langId, 8, 80, 3, 3, 2, 0, 0] });
     this.rooms.set(id, room);
     return room;
   }

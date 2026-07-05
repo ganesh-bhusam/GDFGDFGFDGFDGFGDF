@@ -771,81 +771,161 @@ select option {
 }
 
 /* =========================================================
+
    HOME
+
    ========================================================= */
+
 #home {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 28px;
+
   padding: 28px 32px 56px;
+
   min-height: 100vh;
+
   max-width: 1600px;
+
   margin: 0 auto;
+
 }
+
+
 
 .home-header {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   padding: 0 4px;
+
   gap: 16px;
+
   flex-wrap: wrap;
+
 }
+
+
 
 .logo-text {
+
   font-size: 2.4rem;
+
   margin: 0;
+
 }
+
+
 
 .header-actions {
+
   display: flex;
+
   align-items: center;
+
   gap: 12px;
+
   flex-wrap: wrap;
+
 }
+
+
 
 .welcome-text {
+
   color: var(--text-muted);
+
   font-weight: 600;
+
 }
+
+
 
 .welcome-text b {
+
   color: var(--text-main);
+
 }
+
+
 
 .panels {
+
   display: flex;
+
   justify-content: center;
+
   gap: 24px;
+
   align-items: stretch;
+
   width: 100%;
+
 }
+
+
 
 .panel-left,
+
 .panel-right {
+
   display: none;
+
 }
+
+
 
 .center-panel {
+
   max-width: 520px;
+
   width: 100%;
-  min-height: 540px;
+
+  min-height: 470px;
+
   padding: 28px 28px 32px;
+
   border-radius: 34px;
+
   display: flex;
+
   flex-direction: column;
+
   box-sizing: border-box;
+
 }
+
+
 
 .container-name-lang {
+
   display: grid;
+
   grid-template-columns: 2fr 1fr;
+
   gap: 12px;
+
 }
 
+
+
 .input-name {
+
   font-size: 1.05rem;
+
   font-weight: 600;
+
+}
+
+.name-lang-column {
+  margin-top: 60px;
 }
 
 /* avatar customizer */
@@ -867,8 +947,8 @@ select option {
 .avatar-preview {
   display: grid;
   place-items: center;
-  width: 150px;
-  height: 150px;
+  width: 50px;
+  height: 50px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background:
@@ -911,6 +991,7 @@ select option {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
+  margin-top: 40px;
 }
 
 .join-private {
@@ -937,7 +1018,7 @@ select option {
 }
 
 .section h2 {
-  margin: 0 0 12px;
+  margin: 0 0 12px 24px; /* Added 24px left margin to avoid top-left screw */
   font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.015em;
@@ -1133,6 +1214,7 @@ select option {
   text-transform: uppercase;
   color: var(--text-dim);
   font-weight: 700;
+  margin-left: 24px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--glass-border);
   margin-bottom: 12px;
@@ -1261,6 +1343,8 @@ select option {
   display: none;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 20px;
   z-index: 6;
 }
 
@@ -1644,6 +1728,7 @@ select option {
   letter-spacing: .08em;
   color: #b45309;
   text-transform: uppercase;
+  margin-left: 24px;
 }
 
 .section-label .ico {
@@ -2439,7 +2524,7 @@ select option {
   }
 }
 
-/* scrollbars */
+/* scrollbars 
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -2457,6 +2542,7 @@ select option {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+*/
 
 /*=========================================================
   PREMIUM WOOD PANEL DESIGN SYSTEM
@@ -2683,6 +2769,10 @@ select option {
   align-items: center;
   gap: 16px;
   margin: 0;
+}
+
+.avatar-customizer {
+  margin-top: 20px;
 }
 
 .circle-btn {
@@ -3204,7 +3294,7 @@ select option {
 }
 
 .avatar-section.avatar-customizer {
-  width: 160px;
+  width: 280px !important;
   position: relative;
   justify-content: center;
 }
@@ -3227,13 +3317,18 @@ select option {
 .avatar-frame {
   width: 160px !important;
   height: 160px !important;
-  margin: 0 !important;
+  margin: 0 auto !important;
   transform: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 
 #avatar-big-head.char-head.big {
   width: 100px !important;
   height: 115px !important;
+  transform: translateY(7px) !important;
+  margin: 0 !important;
 }
 
 #avatar-big-head.char-head.big::before {
@@ -3265,7 +3360,7 @@ select option {
 
 .name-lang-column .input-name,
 .name-lang-column .wood-input,
-.name-lang-column input,
+.name-lang-column input:not([type="radio"]),
 .name-lang-column .wood-select,
 .name-lang-column select {
   width: 100% !important;
@@ -3291,10 +3386,7 @@ select option {
 }
 
 .cta-row .play-btn,
-.cta-row .room-btn {
-  margin-top: -50px;
-
-}
+.cta-row .room-btn {}
 
 .cta-row .play-btn,
 .cta-row .room-btn {
@@ -3306,10 +3398,7 @@ select option {
 }
 
 .join-row .join-input,
-.join-row .join-btn {
-  margin-top: -115px;
-
-}
+.join-row .join-btn {}
 
 
 
@@ -3325,23 +3414,27 @@ select option {
 }
 
 /* Fix heading contrast on dark wood background */
+.home-header .welcome-text {
+  color: #fff8e7 !important;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9) !important;
+}
+
 .glass-panel h1,
 .glass-panel h2,
 .glass-panel h3,
 .glass-panel h4,
 .glass-panel h5,
 .glass-panel h6,
-.glass-panel .panel-title,
-.home-header .welcome-text {
-  color: #fff8e7 !important;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9) !important;
+.glass-panel .panel-title {
+  color: #1B5E20 !important;
+  text-shadow: none !important;
 }
 
 .glass-panel p,
 .glass-panel li {
-  color: #fff8e7 !important;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8) !important;
-  font-weight: 500;
+  color: #4E342E !important;
+  text-shadow: none !important;
+  font-weight: 700;
 }
 
 /* Emojis */
@@ -3453,5 +3546,99 @@ select option {
   to {
     opacity: 0;
     transform: translateY(-50%) scale(0.8);
+  }
+}
+
+/* =========================================================
+   MOBILE RESPONSIVENESS OVERRIDES
+   ========================================================= */
+@media (max-width: 768px) {
+
+  /* HOME SCREEN */
+  #home {
+    padding: 16px 12px;
+  }
+
+  .center-panel {
+    padding: 32px 16px !important;
+    min-height: auto;
+  }
+  
+  .panel-inner {
+    gap: 24px !important;
+  }
+
+  .top-row {
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    gap: 24px !important;
+    height: auto !important;
+  }
+
+  .avatar-section {
+    align-self: center !important;
+  }
+
+  .name-lang-column {
+    margin-top: 10px !important;
+    width: 100%;
+    gap: 16px !important;
+  }
+
+  .name-lang-column input:not([type="radio"]),
+  .name-lang-column select {
+    width: 100% !important;
+  }
+
+  .cta-row {
+    flex-direction: column !important;
+    height: auto !important;
+    gap: 16px !important;
+    margin-top: 24px !important;
+  }
+
+  .cta-row .play-btn,
+  .cta-row .room-btn {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .join-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    gap: 16px !important;
+    margin-top: 24px !important;
+  }
+
+  .join-row .join-input,
+  .join-row .join-btn {
+    width: 100% !important;
+  }
+
+  /* GAME SCREEN */
+  #game-wrapper {
+    grid-template-rows: auto minmax(250px, 1fr) auto minmax(200px, 30vh) minmax(100px, 20vh) !important;
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+
+  .toolbar-row {
+    flex-wrap: wrap;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  /* MODALS */
+  .modal-box {
+    width: 95% !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px !important;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr !important;
   }
 }

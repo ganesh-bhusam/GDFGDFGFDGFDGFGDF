@@ -206,6 +206,7 @@
         create: opts.create ? 1 : 0,
         name: $('login-name').value.trim() || (window.Auth.user()?.name || 'Player'),
         lang: String(opts.lang ?? $('login-language').value ?? '0'),
+        mode: document.querySelector('input[name="login-mode"]:checked') ? document.querySelector('input[name="login-mode"]:checked').value : 'all',
         code: '',
         avatar: avatarPayload(),
       });
