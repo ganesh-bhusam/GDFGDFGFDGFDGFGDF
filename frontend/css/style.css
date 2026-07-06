@@ -1373,8 +1373,9 @@ select option {
 
 .words {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 14px;
+  align-items: stretch;
   justify-content: center;
   padding: 12px;
 }
@@ -2364,6 +2365,29 @@ select option {
   background-clip: text;
   color: transparent;
   margin: 8px 0 16px;
+}
+
+.info-page-container h1 {
+  color: #fff8e7;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+  margin-top: 24px;
+  text-align: center;
+}
+
+.info-page-content {
+  padding: 32px 40px !important;
+  margin-top: 24px;
+  margin-bottom: 40px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.info-page-content p,
+.info-page-content li,
+.info-page-content h2,
+.info-page-content h3 {
+  color: #fff8e7 !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8) !important;
 }
 
 .benefits {
@@ -3415,8 +3439,32 @@ select option {
 
 /* Fix heading contrast on dark wood background */
 .home-header .welcome-text {
-  color: #fff8e7 !important;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9) !important;
+  color: #4a2c11 !important;
+  text-shadow: none !important;
+  font-weight: 700;
+}
+
+.home-header .btn-ghost {
+  color: #4a2c11;
+  border-color: #8d5926;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.home-header .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #2b1807;
+  border-color: #4a2c11;
+}
+
+.home-header #logout-btn {
+  background: #8d5926;
+  color: #fff;
+  border-color: #8d5926;
+}
+
+.home-header #logout-btn:hover {
+  background: #7a4a1f;
+  color: #fff;
 }
 
 .glass-panel h1,
@@ -3641,4 +3689,22 @@ select option {
   .settings-grid {
     grid-template-columns: 1fr !important;
   }
+}
+@keyframes scorePopup {
+  0% { opacity: 0; transform: translateY(0) scale(0.8); }
+  20% { opacity: 1; transform: translateY(-10px) scale(1.2); }
+  80% { opacity: 1; transform: translateY(-30px) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
+}
+.score-popup {
+  position: absolute;
+  right: 20px;
+  top: 0;
+  color: #059669;
+  font-weight: 900;
+  font-size: 1.5rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  pointer-events: none;
+  z-index: 100;
+  animation: scorePopup 2.5s ease-out forwards;
 }

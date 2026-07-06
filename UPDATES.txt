@@ -45,3 +45,10 @@
 * Cleaned up dead SQLite files (`skribbl.db`, etc.) left over from a previous database iteration.
 * Fixed Backend Crash Bug: Patched a race condition in `gameEngine.js` where `scheduleHints` was not properly clearing its interval on round transitions, leading to a `TypeError` when reading `currentWord.length` and crashing the server.
 * Expanded Word Banks: Dynamically merged a new, larger multi-language word bank setup, increasing the English vocabulary to nearly 3700 words and adding full support for German, Spanish, French and other regional variations.
+
+## 10. Recent UI Layout & Styling Fixes (2026-07-06)
+* Home Avatar Frame: Centered the avatar inside the frame and increased its display size for better visibility.
+* Game Panel Spacing: Added margins to `.panel-title` and `.section-label` to prevent overlapping with decorative screws.
+* Footer Info Pages (About, Privacy, Contact): Completely overhauled the layout. Removed the grid constraint so pages are wide and centered, applied a transparent glass panel effect with `#fff8e7` text, and added the doodle background. Home page links use a crisp `#1B5E20` and `#77625e` color scheme.
+* Home Header Polish: Styled the Welcome Text, Unlock Premium button, and Logout button with dark brown colors so they contrast beautifully and are fully legible against the light wooden board.
+* Word Selection UI: Modified the `Choose a word` overlay so that the word choice buttons properly stack vertically below the header text, eliminating UX lag and layout confusion.
