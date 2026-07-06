@@ -43,7 +43,10 @@ const q = {
   insertUser: db.prepare('INSERT INTO users (name, username, email, password_hash) VALUES (?, ?, ?, ?)'),
   grantPremium: db.prepare('UPDATE users SET has_premium = 1, ad_free_until = ? WHERE id = ?'),
   insertPayment: db.prepare('INSERT INTO payments (user_id, razorpay_order_id, amount, status, is_mock) VALUES (?, ?, ?, ?, ?)'),
-  completePayment: db.prepare('UPDATE payments SET razorpay_payment_id = ?, status = ? WHERE razorpay_order_id = ?')
+  completePayment: db.prepare('UPDATE payments SET razorpay_payment_id = ?, status = ? WHERE razorpay_order_id = ?'),
+  statsTotalUsers: db.prepare('SELECT COUNT(*) as count FROM users'),
+  statsPremiumUsers: db.prepare('SELECT COUNT(*) as count FROM users WHERE has_premium = 1'),
+  statsTotalRevenue: db.prepare('SELECT SUM(amount) as total FROM payments WHERE status = ?')
 };
 
 module.exports = {

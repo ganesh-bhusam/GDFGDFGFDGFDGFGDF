@@ -29,8 +29,11 @@
 
   <!-- Local environment configurations -->
   <script>
-    window.ENV = { API: 'http://localhost:8001' };
+    window.ENV = { API: '' }; // Changed for production default, will be relative
   </script>
+
+  <!-- Umami Analytics (Phase 5) -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="YOUR_UMAMI_WEBSITE_ID"></script>
 </head>
 
 <body translate="no">
@@ -532,6 +535,12 @@
         <!-- Messages output container scroll box -->
         <div class="chat-content" id="chat-content" data-testid="chat-content"></div>
       </aside>
+      
+      <!-- Mobile Tabs for switching views -->
+      <div class="mobile-tabs" id="mobile-tabs" style="display: none;">
+        <button class="mobile-tab-btn active" data-target="chat">💬 Chat</button>
+        <button class="mobile-tab-btn" data-target="players">👥 Players</button>
+      </div>
     </div>
   </div>
 

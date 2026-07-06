@@ -798,7 +798,8 @@
   // ============================ CHAT ============================
   function addChat({ author, msg, kind, system }) {
     const wrap = $('chat-content');
-    const m = el('div', 'chat-msg' + (kind ? ' ' + kind : '') + (system ? ' system' : ''));
+    const extraClasses = (kind ? ' ' + kind : '') + (system ? ' system' : '') + (kind === 'guess-correct' ? ' flash-correct' : '');
+    const m = el('div', 'chat-msg' + extraClasses);
     if (system) m.innerHTML = '<i>' + escapeHTML(author) + ' ' + escapeHTML(msg) + '</i>';
     else m.innerHTML = '<span class="author">' + escapeHTML(author) + ':</span>' + escapeHTML(msg);
     wrap.appendChild(m);
@@ -1098,6 +1099,11 @@
     const p = canvasCoord(e);
     if (!drawing) return;
     if (tool === 'pencil' || tool === 'eraser' || tool === 'rainbow') {
+      // Improve interpolation and reduce network traffic: only draw if moved at least 2px
+      const dx = p.x - lastPoint.x;
+      const dy = p.y - lastPoint.y;
+      if (dx * dx + dy * dy < 4) return;
+
       let usedColor = colorIndex;
       if (tool === 'eraser') usedColor = secondaryColorIndex;
       else if (tool === 'rainbow') {
@@ -1511,4 +1517,30 @@
     }
   });
   document.addEventListener('premium:unlocked', updateHomeUI);
+
+  // Mobile Tabs Logic
+  document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active class from all buttons
+      document.querySelectorAll('.mobile-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const target = btn.dataset.target;
+      const chatPanel = document.getElementById('game-chat');
+      const playersPanel = document.getElementById('game-players');
+      // On mobile, the canvas is always visible, but the tab-content switches between chat and players.
+      
+      if (target === 'chat') {
+        chatPanel.classList.add('mobile-tab-view', 'active');
+        playersPanel.classList.remove('mobile-tab-view', 'active');
+        chatPanel.style.display = '';
+        playersPanel.style.display = 'none';
+      } else if (target === 'players') {
+        playersPanel.classList.add('mobile-tab-view', 'active');
+        chatPanel.classList.remove('mobile-tab-view', 'active');
+        playersPanel.style.display = '';
+        chatPanel.style.display = 'none';
+      }
+    });
+  });
 })();

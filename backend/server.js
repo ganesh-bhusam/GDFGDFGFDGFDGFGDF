@@ -97,6 +97,27 @@ app.get('/api/',         (req, res) => res.json({ ok: true, service: 'skribbl-pr
 app.get('/api/health',   (req, res) => res.json({ ok: true }));
 app.get('/api/languages',(req, res) => res.json({ languages: getLanguageList() }));
 
+// GET /api/admin/stats - application analytics (Phase 5)
+app.get('/api/admin/stats', (req, res) => {
+  try {
+    const totalUsers = q.statsTotalUsers.get()?.count || 0;
+    const premiumUsers = q.statsPremiumUsers.get()?.count || 0;
+    const totalRevenue = q.statsTotalRevenue.get('captured')?.total || 0;
+    
+    // Live game stats
+    const allRooms = Array.from(engine.rooms.values());
+    const activeRooms = allRooms.length;
+    const activePlayers = allRooms.reduce((acc, r) => acc + r.realPlayerCount(), 0);
+
+    res.json({
+      database: { totalUsers, premiumUsers, totalRevenue },
+      live: { activeRooms, activePlayers }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve stats' });
+  }
+});
+
 // POST /api/play — matchmaking entry point
 app.post('/api/play', (req, res) => {
   const langId = parseInt(req.body.lang ?? '0', 10);
@@ -175,6 +196,31 @@ io.on('connection', (socket) => {
       const create     = payload.create === 1;
       const playerName = String(payload.name || socket.realName || 'Player').slice(0, 21);
       const avatar     = Array.isArray(payload.avatar) ? payload.avatar.slice(0, 4) : [0, 0, 0, -1];
+      const ip         = socket.handshake.headers['x-forwarded-for']?.split(',')[0].trim() || socket.handshake.address;
+
+      // [FIX H5] 10-second grace period reconnection
+      if (joinId && engine.disconnectTimers) {
+        const targetRoom = engine.getRoom(String(joinId));
+        if (targetRoom) {
+          const existingPlayer = targetRoom.players.find(p => 
+            engine.disconnectTimers.has(p.id) &&
+            ((socket.userId && p.userId === socket.userId) || (p.ip === ip && p.name === playerName))
+          );
+
+          if (existingPlayer) {
+            clearTimeout(engine.disconnectTimers.get(existingPlayer.id));
+            engine.disconnectTimers.delete(existingPlayer.id);
+
+            existingPlayer.socketId = socket.id;
+            socket.roomId = targetRoom.id;
+            socket.playerId = existingPlayer.id;
+            socket.join(targetRoom.id);
+
+            socket.emit('data', { id: 10, data: targetRoom.toLobbyInit(existingPlayer.id) });
+            return;
+          }
+        }
+      }
 
       let room;
       if (create) {
@@ -202,6 +248,7 @@ io.on('connection', (socket) => {
         userId:     socket.userId,
         hasPremium: socket.hasPremium,
         bot:        false,
+        ip:         ip,
       };
       room.addPlayer(player);
       socket.roomId   = room.id;
@@ -241,8 +288,16 @@ io.on('connection', (socket) => {
         break;
       case 18: if (typeof data === 'number' || Array.isArray(data)) room.selectWord(playerId, data); break;
       case 19: // [FIX C7] Enforce per-packet command count cap
-        if (Array.isArray(data) && data.length <= MAX_CMDS_PER_PACKET)
+        if (Array.isArray(data) && data.length <= MAX_CMDS_PER_PACKET) {
+          // Packet frequency limiter
+          if (!socket.drawTs) socket.drawTs = [];
+          const now = Date.now();
+          socket.drawTs = socket.drawTs.filter(t => now - t < 1000);
+          socket.drawTs.push(now);
+          if (socket.drawTs.length > 25) break; // Drop excess traffic
+          
           room.receiveDrawCommands(playerId, data);
+        }
         break;
       case 20: room.clearCanvas(playerId); break;
       case 21: if (typeof data === 'number') room.undoCanvas(playerId, data); break;
@@ -262,22 +317,35 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const room = engine.getRoom(socket.roomId);
     if (!room) return;
-    room.removePlayer(socket.playerId, 0);
-    // Tear down room after 60s grace period if no real players remain
-    if (room.realPlayerCount() === 0) {
-      // [FIX H4] deletionTimeouts is always initialized in GameEngine constructor
-      if (engine.deletionTimeouts.has(room.id)) {
-        clearTimeout(engine.deletionTimeouts.get(room.id));
-      }
-      const t = setTimeout(() => {
-        if (room.realPlayerCount() === 0) {
-          console.log(`[cleanup] Room ${room.id} deleted (0 players after grace period)`);
-          engine.removeRoom(room.id);
+    
+    const playerId = socket.playerId;
+    const roomId = socket.roomId;
+    
+    // 10-second grace period
+    if (!engine.disconnectTimers) engine.disconnectTimers = new Map();
+    const tId = setTimeout(() => {
+      engine.disconnectTimers.delete(playerId);
+      const currentRoom = engine.getRoom(roomId);
+      if (!currentRoom) return;
+      currentRoom.removePlayer(playerId, 0);
+      
+      // Tear down room after 60s grace period if no real players remain
+      if (currentRoom.realPlayerCount() === 0) {
+        if (engine.deletionTimeouts.has(currentRoom.id)) {
+          clearTimeout(engine.deletionTimeouts.get(currentRoom.id));
         }
-        engine.deletionTimeouts.delete(room.id);
-      }, 60_000);
-      engine.deletionTimeouts.set(room.id, t);
-    }
+        const t = setTimeout(() => {
+          if (currentRoom.realPlayerCount() === 0) {
+            console.log(`[cleanup] Room ${currentRoom.id} deleted (0 players after grace period)`);
+            engine.removeRoom(currentRoom.id);
+          }
+          engine.deletionTimeouts.delete(currentRoom.id);
+        }, 60_000);
+        engine.deletionTimeouts.set(currentRoom.id, t);
+      }
+    }, 10_000);
+    
+    engine.disconnectTimers.set(playerId, tId);
   });
 });
 

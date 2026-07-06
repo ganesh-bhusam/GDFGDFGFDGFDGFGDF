@@ -2489,11 +2489,54 @@ select option {
       "bar"
       "canvas"
       "toolbar"
-      "chat"
-      "players";
+      "tabs"
+      "tab-content";
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(280px, 400px) auto minmax(200px, 280px) minmax(160px, 220px);
+    grid-template-rows: auto minmax(280px, 400px) auto auto minmax(200px, 350px);
     height: auto;
+  }
+
+  .mobile-tabs {
+    grid-area: tabs;
+    display: flex !important;
+    gap: 8px;
+    padding: 8px 0;
+    justify-content: center;
+  }
+
+  .mobile-tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: rgba(255,255,255,0.1);
+    color: var(--text-muted);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-tab-btn.active {
+    background: rgba(255,255,255,0.3);
+    color: var(--text-main);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 10px rgba(252,211,77,0.3);
+  }
+
+  /* Initially hide players, show chat (or whatever JS decides) */
+  .mobile-tab-view {
+    display: none !important;
+  }
+  .mobile-tab-view.active {
+    display: flex !important;
+  }
+
+  #game-chat, #game-players {
+    grid-area: tab-content;
+  }
+  
+  #game-players {
+    display: none; /* Hide players by default on mobile */
   }
 
   .room {
@@ -3707,4 +3750,22 @@ select option {
   pointer-events: none;
   z-index: 100;
   animation: scorePopup 2.5s ease-out forwards;
+}
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(252, 211, 77, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0); }
+}
+
+@keyframes flash-green {
+  0% { background: rgba(34, 197, 94, 0.4); color: white; transform: scale(1.02); }
+  100% { background: transparent; transform: scale(1); }
+}
+
+.chat-msg.flash-correct {
+  animation: flash-green 0.5s ease-out;
+}
+
+.player-card.drawer {
+  animation: pulse-glow 2s infinite ease-in-out;
 }
