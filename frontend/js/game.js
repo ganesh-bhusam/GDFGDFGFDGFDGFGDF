@@ -207,7 +207,7 @@
     socket.on('reconnect_attempt', (n) => { toast(`Reconnecting… (${n}/${MAX_RECONNECT})`, 'error'); });
     socket.on('reconnect_failed', () => { toast('Could not reconnect. Returning to home.', 'error'); show('home'); });
     socket.on('joinerr', (code) => {
-      const map = { 1: 'Room not found', 2: 'Room is full', 3: 'Cooldown', 4: 'You are banned', 5: 'Joining too fast', 100: 'Already connected', 200: 'Too many users from your IP', 300: 'Kicked too many times' };
+      const map = { 1: 'Room not found', 2: 'Room is full', 3: 'Cooldown', 4: 'You are banned', 5: 'Joining too fast', 6: 'Name already taken!', 100: 'Already connected', 200: 'Too many users from your IP', 300: 'Kicked too many times' };
       toast(map[code] || 'Failed to join', 'error');
     });
     socket.on('reason', (code) => { toast(code === 1 ? 'You were kicked' : 'You were banned', 'error'); });

@@ -197,6 +197,18 @@ io.on('connection', (socket) => {
         }
       }
 
+      // Global name uniqueness check
+      let nameTaken = false;
+      for (const r of engine.rooms.values()) {
+        if (r.players.some((p) => !p.bot && p.name.toLowerCase() === playerName.toLowerCase())) {
+          nameTaken = true;
+          break;
+        }
+      }
+      if (nameTaken) {
+        return socket.emit('joinerr', 6);
+      }
+
       let room;
       if (create) {
         room = engine.createPrivate(langId, modeId);
