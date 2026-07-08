@@ -924,7 +924,7 @@
 
     if (!usePremium && tool === 'rainbow') {
       tool = 'pencil';
-      document.querySelectorAll('#tool-buttons .tool-btn').forEach((x) => x.classList.toggle('active', x.dataset.tool === 'pencil'));
+      document.querySelectorAll('#tool-buttons .tool-btn:not(#tool-cursor-toggle)').forEach((x) => x.classList.toggle('active', x.dataset.tool === 'pencil'));
     }
   }
 
@@ -963,13 +963,15 @@
     else setColor(11);
   });
 
+  let customCursorEnabled = true;
+
   function updateCanvasCursor() {
     const cvs = $('game-canvas');
     if (!cvs) return;
     cvs.classList.remove('tool-pencil', 'tool-eraser', 'tool-fill');
     
-    if (!drawingEnabled) {
-      canvas.style.cursor = 'default';
+    if (!drawingEnabled || !customCursorEnabled) {
+      canvas.style.cursor = drawingEnabled ? 'crosshair' : 'default';
       return;
     }
     
@@ -982,7 +984,13 @@
   // ============================ TOOLS / SIZES ============================
   document.querySelectorAll('#tool-buttons .tool-btn').forEach((b) => {
     b.addEventListener('click', () => {
-      document.querySelectorAll('#tool-buttons .tool-btn').forEach((x) => x.classList.remove('active'));
+      if (b.id === 'tool-cursor-toggle') {
+        customCursorEnabled = !customCursorEnabled;
+        b.classList.toggle('active', customCursorEnabled);
+        updateCanvasCursor();
+        return;
+      }
+      document.querySelectorAll('#tool-buttons .tool-btn:not(#tool-cursor-toggle)').forEach((x) => x.classList.remove('active'));
       document.querySelectorAll('.shape-btn').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
       tool = b.dataset.tool;
@@ -1544,7 +1552,7 @@
       b.addEventListener('click', (ev) => {
         ev.preventDefault();
         document.querySelectorAll('.shape-btn').forEach(x => x.classList.remove('active'));
-        document.querySelectorAll('#tool-buttons .tool-btn').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('#tool-buttons .tool-btn:not(#tool-cursor-toggle)').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
         tool = 'shape';
         updateCanvasCursor();
