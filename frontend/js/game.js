@@ -574,11 +574,22 @@
       const reasonMap = { 0: 'Everyone guessed!', 1: 'Time is up!', 2: 'Drawer left', 5: 'Drawer skipped' };
       $('reveal-reason').textContent = reasonMap[s.data?.reason] || '';
       const sc = s.data?.scores || [];
+      let anyoneGuessed = false;
       for (let i = 0; i < sc.length; i += 3) {
         const pid = sc[i], score = sc[i + 1], delta = sc[i + 2];
         const p = players.find((x) => x.id === pid);
-        if (p) { p.score = score; p.delta = delta; }
+        if (p) { 
+          p.score = score; p.delta = delta; 
+          if (delta > 0 && p.id !== currentDrawerId) {
+            anyoneGuessed = true;
+          }
+        }
       }
+
+      if (!anyoneGuessed && (s.data?.reason === 1 || s.data?.reason === 5 || s.data?.reason === 2)) {
+        playSound('roundEndFail');
+      }
+
       updatePlayersList();
     } else if (s.id === STATE.X) {
       overlay.classList.add('active');
