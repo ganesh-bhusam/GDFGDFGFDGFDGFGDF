@@ -26,6 +26,7 @@
   <!-- SDKs and client-side dependencies -->
   <!-- Socket.IO only (Razorpay removed) -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <!-- Local environment configurations -->
   <script>
@@ -502,8 +503,7 @@
 
         <!-- QR Code (desktop) -->
         <div id="upi-qr-section" style="text-align:center;margin:16px 0;">
-          <img src="/img/payment-qr.png" alt="Scan to Pay ₹20 via UPI"
-            style="width:200px;height:200px;border-radius:12px;border:3px solid rgba(99,102,241,0.5);">
+          <div id="upi-qrcode-container" style="display:inline-block;padding:12px;background:#fff;border-radius:12px;border:3px solid rgba(99,102,241,0.5);"></div>
           <p style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:8px;">Scan with GPay · PhonePe · Paytm · Any UPI app</p>
         </div>
 
