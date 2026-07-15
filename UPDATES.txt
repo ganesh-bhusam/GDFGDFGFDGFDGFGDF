@@ -52,3 +52,23 @@
 * Footer Info Pages (About, Privacy, Contact): Completely overhauled the layout. Removed the grid constraint so pages are wide and centered, applied a transparent glass panel effect with `#fff8e7` text, and added the doodle background. Home page links use a crisp `#1B5E20` and `#77625e` color scheme.
 * Home Header Polish: Styled the Welcome Text, Unlock Premium button, and Logout button with dark brown colors so they contrast beautifully and are fully legible against the light wooden board.
 * Word Selection UI: Modified the `Choose a word` overlay so that the word choice buttons properly stack vertically below the header text, eliminating UX lag and layout confusion.
+
+## 11. Custom Mouse Cursor & Game Fixes (2026-07-16)
+* Added a toggle button for the custom mouse cursor in the drawing tools and moved it to the game-bar so it is visible to all players.
+* Fixed socket flooding by batching draw commands, and the chat is now properly cleared when re-joining.
+* Fixed multiple bugs including: name validation, URL invite join logic, welcome text, and cursor toggle safety.
+* Fixed invite link generation in the lobby and correctly wired up the copy button.
+
+## 12. UI Layout Adjustments (2026-07-16)
+* Fixed UI clipping of the player count badge and moved it to the left side of the Players panel header. Made panel headers extra bold.
+* Added cache-busters to assets to force client updates and fixed panel title overlapping.
+
+## 13. Dynamic Result Podiums & Transitions (2026-07-16)
+* Added smooth transitions throughout the game.
+* Implemented a new round end scoreboard.
+* Added an interactive, dynamic final result podium at the end of the game.
+
+## 14. Advanced Color Picker Integration (2026-07-16)
+* Replaced the standard "Random Color" wheel button with a fully-featured, popup Advanced Color Picker.
+* Integrates a visual color wheel, HSV/RGB sliders, alpha transparency, HEX input, an eyedropper tool, and dynamic palette generation.
+* Color selections seamlessly tie into the active drawing tools without disruption.

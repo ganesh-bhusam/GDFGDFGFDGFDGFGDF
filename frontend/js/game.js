@@ -58,7 +58,7 @@
   const canvas = document.getElementById('draw-canvas');
   const ctx = canvas.getContext('2d');
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.fillStyle = '#FBFCFD';
+  ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const drawCommands = [];
@@ -72,15 +72,408 @@
   wheelInput.style.height = '0';
   document.body.appendChild(wheelInput);
 
-  // color-wheel button → picks a random color (replaces random button)
-  document.addEventListener('click', (ev) => {
-    if (ev.target && (ev.target.id === 'color-wheel' || ev.target.closest('#color-wheel'))) {
-      ev.preventDefault();
-      // Random from ALL_COLORS for variety
-      const rndIdx = Math.floor(Math.random() * ALL_COLORS.length);
-      setColor(rndIdx);
+  // Advanced Color Picker integration
+  (function(){
+    // h: 0-360, s: 0-1, v: 0-1, a: 0-1
+    let state = { h: 120, s: 0.55, v: 0.55, a: 1 };
+    let metallic = 0.0;
+    let roughness = 0.741176;
+
+    function hsvToRgb(h, s, v) {
+      h = ((h % 360) + 360) % 360;
+      const c = v * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const m = v - c;
+      let r=0,g=0,b=0;
+      if (h < 60) [r,g,b] = [c,x,0];
+      else if (h < 120) [r,g,b] = [x,c,0];
+      else if (h < 180) [r,g,b] = [0,c,x];
+      else if (h < 240) [r,g,b] = [0,x,c];
+      else if (h < 300) [r,g,b] = [x,0,c];
+      else [r,g,b] = [c,0,x];
+      return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
     }
-  });
+
+    function rgbToHsv(r,g,b) {
+      r/=255; g/=255; b/=255;
+      const max = Math.max(r,g,b), min = Math.min(r,g,b);
+      const d = max - min;
+      let h = 0;
+      if (d !== 0) {
+        if (max === r) h = ((g-b)/d) % 6;
+        else if (max === g) h = (b-r)/d + 2;
+        else h = (r-g)/d + 4;
+        h *= 60;
+        if (h < 0) h += 360;
+      }
+      const s = max === 0 ? 0 : d/max;
+      const v = max;
+      return [h,s,v];
+    }
+
+    function toHex2(n) { return n.toString(16).padStart(2,'0').toUpperCase(); }
+    function rgbaToHex(r,g,b,a) { return toHex2(r)+toHex2(g)+toHex2(b)+toHex2(Math.round(a*255)); }
+
+    function currentRgb() { return hsvToRgb(state.h, state.s, state.v); }
+
+    // ---------------- wheel ----------------
+    const wheelCanvas = document.getElementById('wheelCanvas');
+    if (!wheelCanvas) return; // Guard
+    const wctx = wheelCanvas.getContext('2d');
+    const WSIZE = 150;
+
+    function drawWheel() {
+      const img = wctx.createImageData(WSIZE, WSIZE);
+      const radius = WSIZE / 2;
+      for (let y = 0; y < WSIZE; y++) {
+        for (let x = 0; x < WSIZE; x++) {
+          const dx = x - radius, dy = y - radius;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          const idx = (y * WSIZE + x) * 4;
+          if (dist <= radius) {
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            if (angle < 0) angle += 360;
+            const sat = Math.min(dist / radius, 1);
+            const [r,g,b] = hsvToRgb(angle, sat, 1);
+            img.data[idx] = r; img.data[idx+1] = g; img.data[idx+2] = b; img.data[idx+3] = 255;
+          } else {
+            img.data[idx+3] = 0;
+          }
+        }
+      }
+      wctx.putImageData(img, 0, 0);
+    }
+    drawWheel();
+
+    function updateWheelDot() {
+      const radius = WSIZE / 2;
+      const angleRad = state.h * Math.PI / 180;
+      const dist = state.s * radius;
+      const x = radius + Math.cos(angleRad) * dist;
+      const y = radius + Math.sin(angleRad) * dist;
+      const dot = document.getElementById('wheelDot');
+      if(dot) {
+        dot.style.left = x + 'px';
+        dot.style.top = y + 'px';
+      }
+    }
+
+    function wheelInteract(clientX, clientY) {
+      const rect = wheelCanvas.getBoundingClientRect();
+      const radius = rect.width / 2;
+      let dx = clientX - rect.left - radius;
+      let dy = clientY - rect.top - radius;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > radius) { dx = dx * radius / dist; dy = dy * radius / dist; dist = radius; }
+      let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      if (angle < 0) angle += 360;
+      state.h = angle;
+      state.s = radius === 0 ? 0 : dist / radius;
+      render();
+    }
+
+    let wheelDragging = false;
+    wheelCanvas.addEventListener('pointerdown', e => { wheelDragging = true; wheelCanvas.setPointerCapture(e.pointerId); wheelInteract(e.clientX, e.clientY); });
+    wheelCanvas.addEventListener('pointermove', e => { if (wheelDragging) wheelInteract(e.clientX, e.clientY); });
+    wheelCanvas.addEventListener('pointerup', e => { wheelDragging = false; });
+
+    // ---------------- generic slider helper ----------------
+    function makeSlider(el, opts) {
+      if(!el) return;
+      function frac() {
+        let f = opts.get();
+        return Math.min(1, Math.max(0, f));
+      }
+      function pointerToFrac(clientX, clientY) {
+        const rect = el.getBoundingClientRect();
+        let f;
+        if (opts.vertical) {
+          f = 1 - (clientY - rect.top) / rect.height;
+        } else {
+          f = (clientX - rect.left) / rect.width;
+        }
+        return Math.min(1, Math.max(0, f));
+      }
+      let dragging = false;
+      el.addEventListener('pointerdown', e => {
+        dragging = true;
+        el.setPointerCapture(e.pointerId);
+        opts.set(pointerToFrac(e.clientX, e.clientY));
+        render();
+      });
+      el.addEventListener('pointermove', e => {
+        if (dragging) { opts.set(pointerToFrac(e.clientX, e.clientY)); render(); }
+      });
+      el.addEventListener('pointerup', () => dragging = false);
+    }
+
+    // ---------------- build RGBA + HSV rows ----------------
+    const rgbaCol = document.getElementById('rgbaCol');
+    const hsvSliders = document.getElementById('hsvSliders');
+
+    function buildRow(container, key) {
+      if(!container) return;
+      const row = document.createElement('div');
+      row.className = 'hslider-row';
+      row.innerHTML = `<label class="small">${key.toUpperCase()}</label>
+        <div class="hslider" id="slider-${key}"><div class="mark" id="mark-${key}"></div></div>
+        <input type="number" id="num-${key}" step="0.001" min="0" max="${key==='h'?360:1}">`;
+      container.appendChild(row);
+    }
+    if (rgbaCol && hsvSliders) {
+        ['r','g','b','a'].forEach(k => buildRow(rgbaCol, k));
+        ['h','s','v'].forEach(k => buildRow(hsvSliders, k));
+    }
+
+    // wire RGB sliders
+    function rgbGetSet(key) {
+      return {
+        get: () => {
+          const [r,g,b] = currentRgb();
+          const map = {r,g,b};
+          return map[key] / 255;
+        },
+        set: (frac) => {
+          let [r,g,b] = currentRgb();
+          const map = {r,g,b};
+          map[key] = Math.round(frac * 255);
+          const [h,s,v] = rgbToHsv(map.r, map.g, map.b);
+          state.h = h; state.s = s; state.v = v;
+        }
+      };
+    }
+    ['r','g','b'].forEach(k => {
+      const gs = rgbGetSet(k);
+      makeSlider(document.getElementById('slider-'+k), { get: gs.get, set: gs.set });
+    });
+    makeSlider(document.getElementById('slider-a'), { get: () => state.a, set: f => state.a = f });
+
+    makeSlider(document.getElementById('slider-h'), { get: () => state.h/360, set: f => state.h = f*360 });
+    makeSlider(document.getElementById('slider-s'), { get: () => state.s, set: f => state.s = f });
+    makeSlider(document.getElementById('slider-v'), { get: () => state.v, set: f => state.v = f });
+
+    // number inputs sync
+    function wireNumber(key, getFrac, setFrac, scale) {
+      const inp = document.getElementById('num-'+key);
+      if(!inp) return;
+      inp.addEventListener('change', () => {
+        let val = parseFloat(inp.value);
+        if (isNaN(val)) return;
+        setFrac(val / scale);
+        render();
+      });
+    }
+    wireNumber('r', null, f => { const gs = rgbGetSet('r'); gs.set(f); }, 1);
+    wireNumber('g', null, f => { const gs = rgbGetSet('g'); gs.set(f); }, 1);
+    wireNumber('b', null, f => { const gs = rgbGetSet('b'); gs.set(f); }, 1);
+    wireNumber('a', null, f => state.a = f, 1);
+    const numH = document.getElementById('num-h');
+    if (numH) {
+      numH.addEventListener('change', () => {
+        let val = parseFloat(numH.value);
+        if (!isNaN(val)) { state.h = val; render(); }
+      });
+    }
+    wireNumber('s', null, f => state.s = f, 1);
+    wireNumber('v', null, f => state.v = f, 1);
+
+    // ---------------- vertical sliders (value / alpha) ----------------
+    makeSlider(document.getElementById('vSlider'), { vertical: true, get: () => state.v, set: f => state.v = f });
+    makeSlider(document.getElementById('aSlider'), { vertical: true, get: () => state.a, set: f => state.a = f });
+
+    // ---------------- hex input ----------------
+    const hexInput = document.getElementById('hexInput');
+    if (hexInput) {
+      hexInput.addEventListener('change', () => {
+        let hex = hexInput.value.replace('#','').trim();
+        if (/^[0-9a-fA-F]{6}$/.test(hex)) hex += 'FF';
+        if (/^[0-9a-fA-F]{8}$/.test(hex)) {
+          const r = parseInt(hex.substr(0,2),16);
+          const g = parseInt(hex.substr(2,2),16);
+          const b = parseInt(hex.substr(4,2),16);
+          const a = parseInt(hex.substr(6,2),16) / 255;
+          const [h,s,v] = rgbToHsv(r,g,b);
+          state.h = h; state.s = s; state.v = v; state.a = a;
+          render();
+        }
+      });
+    }
+
+    // ---------------- palette ----------------
+    const paletteColors = [
+      '#3d1f10','#5c2c17','#7a3b1d','#a15226','#c96f34','#e08c47','#f0a862','#f7c98a',
+      '#f9d9a8','#ffe9c7','#8b1e1e','#b52a2a','#d9432f','#f0603c','#f2825b','#c2185b',
+      '#8e24aa','#5e35b1','#3949ab','#1e88e5','#039be5','#00acc1','#00897b','#43a047',
+      '#7cb342','#c0ca33','#fdd835','#ffb300','#fb8c00','#f4511e','#6d4c41','#757575',
+      '#546e7a','#26323a','#1b2a2f','#102015','#1a3b1f','#245c2a','#2e7d32','#66bb6a',
+      '#a5d6a7','#004d40','#00695c','#00796b','#26a69a','#004ba0','#1565c0','#283593',
+      '#4527a0','#6a1b9a','#ad1457','#c62828','#d84315','#4e342e','#212121','#000000',
+      '#ffffff','#eeeeee','#bdbdbd','#9e9e9e','#616161','#f5f5dc','#d2b48c','#8d6e63'
+    ];
+    const paletteGrid = document.getElementById('paletteGrid');
+    if (paletteGrid) {
+      paletteColors.forEach(c => {
+        const sw = document.createElement('div');
+        sw.className = 'swatch';
+        sw.style.background = c;
+        sw.title = c;
+        sw.addEventListener('click', () => {
+          const r = parseInt(c.substr(1,2),16), g = parseInt(c.substr(3,2),16), b = parseInt(c.substr(5,2),16);
+          const [h,s,v] = rgbToHsv(r,g,b);
+          state.h = h; state.s = s; state.v = v;
+          render();
+        });
+        paletteGrid.appendChild(sw);
+      });
+    }
+
+    // ---------------- PBR sliders ----------------
+    const metallicSlider = document.getElementById('metallicSlider');
+    const roughnessSlider = document.getElementById('roughnessSlider');
+    makeSlider(metallicSlider, { get: () => metallic, set: f => { metallic = f; renderPbr(); } });
+    makeSlider(roughnessSlider, { get: () => roughness, set: f => { roughness = f; renderPbr(); } });
+
+    function renderPbr() {
+      if(metallicSlider) {
+        metallicSlider.style.background = `linear-gradient(to right, #1a1a1a, #eef2f6)`;
+        const mark = metallicSlider.querySelector('.mark');
+        if (mark) mark.style.left = (metallic*100)+'%';
+      }
+      if(roughnessSlider) {
+        roughnessSlider.style.background = `linear-gradient(to right, #444, #ddd)`;
+        const mark = roughnessSlider.querySelector('.mark');
+        if (mark) mark.style.left = (roughness*100)+'%';
+      }
+      const mVal = document.getElementById('metallicVal');
+      if (mVal) mVal.textContent = metallic.toFixed(3);
+      const rVal = document.getElementById('roughnessVal');
+      if (rVal) rVal.textContent = roughness.toFixed(3);
+    }
+
+    // ---------------- eyedropper ----------------
+    async function runEyedropper() {
+      if (!('EyeDropper' in window)) {
+        alert('EyeDropper API not supported in this browser.');
+        return;
+      }
+      try {
+        const ed = new window.EyeDropper();
+        const result = await ed.open();
+        const hex = result.sRGBHex.replace('#','');
+        const r = parseInt(hex.substr(0,2),16), g = parseInt(hex.substr(2,2),16), b = parseInt(hex.substr(4,2),16);
+        const [h,s,v] = rgbToHsv(r,g,b);
+        state.h = h; state.s = s; state.v = v;
+        render();
+      } catch (err) { /* user cancelled */ }
+    }
+    const dropperBtn = document.getElementById('dropperBtn');
+    if (dropperBtn) dropperBtn.addEventListener('click', runEyedropper);
+    const eyedropBtn = document.getElementById('eyedropBtn');
+    if (eyedropBtn) eyedropBtn.addEventListener('click', runEyedropper);
+
+    let isInitialRender = true;
+
+    // ---------------- master render ----------------
+    function render() {
+      const [r,g,b] = currentRgb();
+
+      // preview
+      const previewFill = document.getElementById('previewFill');
+      if (previewFill) previewFill.style.background = `rgba(${r},${g},${b},${state.a})`;
+      const eyedropSwatch = document.getElementById('eyedropSwatch');
+      if (eyedropSwatch) eyedropSwatch.style.background = `rgba(${r},${g},${b},${state.a})`;
+
+      // wheel dot
+      updateWheelDot();
+
+      // vertical value slider
+      const vSlider = document.getElementById('vSlider');
+      const [hueR,hueG,hueB] = hsvToRgb(state.h, state.s, 1);
+      if (vSlider) vSlider.style.background = `linear-gradient(to top, #000, rgb(${hueR},${hueG},${hueB}))`;
+      const vMark = document.getElementById('vMark');
+      if (vMark) vMark.style.top = ((1-state.v)*100)+'%';
+
+      // vertical alpha slider
+      const aSlider = document.getElementById('aSlider');
+      if (aSlider) {
+        aSlider.style.backgroundImage = `linear-gradient(to top, rgba(${r},${g},${b},0), rgba(${r},${g},${b},1)),
+          linear-gradient(45deg, #777 25%, transparent 25%),
+          linear-gradient(-45deg, #777 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #777 75%),
+          linear-gradient(-45deg, transparent 75%, #777 75%)`;
+        aSlider.style.backgroundSize = 'auto, 8px 8px, 8px 8px, 8px 8px, 8px 8px';
+        aSlider.style.backgroundPosition = '0 0, 0 0, 0 4px, 4px -4px, -4px 0px';
+      }
+      const aMark = document.getElementById('aMark');
+      if (aMark) aMark.style.top = ((1-state.a)*100)+'%';
+
+      // RGB sliders
+      const rgbVals = {r,g,b};
+      ['r','g','b'].forEach(k => {
+        const slider = document.getElementById('slider-'+k);
+        if(!slider) return;
+        const lo = {...rgbVals}; lo[k] = 0;
+        const hi = {...rgbVals}; hi[k] = 255;
+        slider.style.background = `linear-gradient(to right, rgb(${lo.r},${lo.g},${lo.b}), rgb(${hi.r},${hi.g},${hi.b}))`;
+        document.getElementById('mark-'+k).style.left = ((rgbVals[k]/255)*100)+'%';
+        document.getElementById('num-'+k).value = (rgbVals[k]/255).toFixed(3);
+      });
+      // alpha slider (horizontal, in RGBA column)
+      const aH = document.getElementById('slider-a');
+      if (aH) {
+        aH.style.backgroundImage = `linear-gradient(to right, rgba(${r},${g},${b},0), rgba(${r},${g},${b},1)),
+          linear-gradient(45deg, #777 25%, transparent 25%),
+          linear-gradient(-45deg, #777 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #777 75%),
+          linear-gradient(-45deg, transparent 75%, #777 75%)`;
+        aH.style.backgroundSize = 'auto, 8px 8px, 8px 8px, 8px 8px, 8px 8px';
+        aH.style.backgroundPosition = '0 0, 0 0, 0 4px, 4px -4px, -4px 0px';
+        document.getElementById('mark-a').style.left = (state.a*100)+'%';
+        document.getElementById('num-a').value = state.a.toFixed(3);
+      }
+
+      // HSV sliders
+      const sliderH = document.getElementById('slider-h');
+      if (sliderH) {
+        sliderH.style.background =
+          'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)';
+        document.getElementById('mark-h').style.left = ((state.h/360)*100)+'%';
+        document.getElementById('num-h').value = state.h.toFixed(1);
+      }
+
+      const sliderS = document.getElementById('slider-s');
+      if (sliderS) {
+        const [sLoR,sLoG,sLoB] = hsvToRgb(state.h, 0, state.v);
+        const [sHiR,sHiG,sHiB] = hsvToRgb(state.h, 1, state.v);
+        sliderS.style.background = `linear-gradient(to right, rgb(${sLoR},${sLoG},${sLoB}), rgb(${sHiR},${sHiG},${sHiB}))`;
+        document.getElementById('mark-s').style.left = (state.s*100)+'%';
+        document.getElementById('num-s').value = state.s.toFixed(3);
+      }
+
+      const sliderV = document.getElementById('slider-v');
+      if (sliderV) {
+        sliderV.style.background = `linear-gradient(to right, #000000, rgb(${hueR},${hueG},${hueB}))`;
+        document.getElementById('mark-v').style.left = (state.v*100)+'%';
+        document.getElementById('num-v').value = state.v.toFixed(3);
+      }
+
+      // hex
+      if (hexInput && document.activeElement !== hexInput) {
+        hexInput.value = rgbaToHex(r,g,b,state.a);
+      }
+
+      // Notify the main game logic to update the primary color!
+      if (!isInitialRender && typeof setColor === 'function' && hexInput) {
+        // If alpha is 1, use 6 character hex for better compatibility, else use 8
+        const hexStr = '#' + (state.a === 1 ? hexInput.value.slice(0, 6) : hexInput.value);
+        setColor(hexStr);
+      }
+    }
+
+    render();
+    renderPbr();
+    isInitialRender = false;
+  })();
 
   // Legacy: action-random (kept for any old references)
   document.addEventListener('click', (ev) => {
@@ -99,6 +492,7 @@
 
   function toast(msg, kind = '') {
     const t = $('toast');
+    if (!t) return; // Guard: skip if DOM not ready
     t.textContent = msg;
     t.className = kind + ' show';
     clearTimeout(toast._t);
@@ -308,10 +702,25 @@
     playSound('join');
   }
   function onPlayerLeft(d) {
+    // Don't show a toast for ourselves — we handle our own leave via the leave button / disconnect handler
+    if (d.id === me) return;
     const idx = players.findIndex((p) => p.id === d.id);
     if (idx >= 0) {
       const p = players.splice(idx, 1)[0];
-      addChatSystem(p.name + ' left', 'leave');
+      
+      let reasonMsg = 'left the game';
+      let msgType = 'info';
+      if (d.reason === 1) {
+        reasonMsg = 'was kicked';
+        msgType = 'error';
+      } else if (d.reason === 2) {
+        reasonMsg = 'was banned';
+        msgType = 'error';
+      }
+      
+      addChatSystem(`${p.name} ${reasonMsg}`, 'leave');
+      toast(`${p.name} ${reasonMsg}`, msgType);
+      
       updatePlayersList();
       playSound('leave');
     }
@@ -825,9 +1234,26 @@
       grid.appendChild(lbl);
       grid.appendChild(sel);
     });
-    // Only owner sees Start button enabled
+    // Only owner sees Start button enabled and Custom Words
     const startBtn = $('button-start-game');
-    if (startBtn) startBtn.disabled = !isOwner;
+    const customWordsWrap = $('custom-words-wrap');
+    const waitingText = $('waiting-host-text');
+    const roomHint = $('room-start-hint');
+
+    if (startBtn) {
+      if (isOwner) {
+        startBtn.style.display = 'inline-block';
+        startBtn.disabled = false;
+        if (customWordsWrap) customWordsWrap.style.display = 'block';
+        if (waitingText) waitingText.style.display = 'none';
+        if (roomHint) roomHint.style.display = 'block';
+      } else {
+        startBtn.style.display = 'none';
+        if (customWordsWrap) customWordsWrap.style.display = 'none';
+        if (waitingText) waitingText.style.display = 'block';
+        if (roomHint) roomHint.style.display = 'none';
+      }
+    }
   }
 
   // ============================ PLAYERS LIST ============================
@@ -976,12 +1402,14 @@
     if (system) m.innerHTML = '<i>' + escapeHTML(author) + ' ' + escapeHTML(msg) + '</i>';
     else m.innerHTML = '<span class="author">' + escapeHTML(author) + ':</span>' + escapeHTML(msg);
     wrap.appendChild(m);
+    wrap.scrollTop = wrap.scrollHeight;
   }
   function addChatSystem(msg, kind) {
     const wrap = $('chat-content');
     const m = el('div', 'chat-msg system' + (kind ? ' ' + kind : ''));
     m.textContent = msg;
     wrap.appendChild(m);
+    wrap.scrollTop = wrap.scrollHeight;
   }
 
   $('chat-form').addEventListener('submit', (e) => {
@@ -1092,8 +1520,20 @@
   }
 
   function setColor(idx, secondary = false) {
-    if (secondary) secondaryColorIndex = idx;
-    else colorIndex = idx;
+    if (secondary) {
+      secondaryColorIndex = idx;
+    } else {
+      colorIndex = idx;
+      // If the rainbow tool is active and the user picks a solid color,
+      // automatically switch back to pencil so the chosen color is used immediately.
+      if (tool === 'rainbow') {
+        tool = 'pencil';
+        document.querySelectorAll('#tool-buttons .tool-btn').forEach((x) => x.classList.remove('active'));
+        const pencilBtn = document.querySelector('#tool-buttons .tool-btn[data-tool="pencil"]');
+        if (pencilBtn) pencilBtn.classList.add('active');
+        updateCanvasCursor();
+      }
+    }
     $('color-primary').style.background = colorFromIdx(colorIndex);
     $('color-secondary').style.background = colorFromIdx(secondaryColorIndex);
     
@@ -1245,17 +1685,18 @@
       if (!drawingEnabled) return;
       if (undoneCommands.length === 0) return;
       const strokeToRedo = undoneCommands.pop();
-      // Push back to drawCommands in original order (reverse iteration because we popped from end)
+      // strokeToRedo was built by popping from drawCommands (newest first),
+      // so index 0 = last cmd, index N-1 = first cmd.
+      // Re-push in original order: iterate from end to start.
+      const orderedStroke = [];
       for (let i = strokeToRedo.length - 1; i >= 0; i--) {
         drawCommands.push(strokeToRedo[i]);
+        orderedStroke.push(strokeToRedo[i]);
       }
       strokeSizes.push(strokeToRedo.length);
-      send(19, strokeToRedo.slice().reverse()); // send in original order
-      
-      // Redraw the stroke
-      for (let i = strokeToRedo.length - 1; i >= 0; i--) {
-        renderCommand(strokeToRedo[i]);
-      }
+      // Send in original order and re-render in original order
+      send(19, orderedStroke);
+      orderedStroke.forEach(cmd => renderCommand(cmd));
       updateRedoButtonState();
     });
   }
@@ -1280,6 +1721,7 @@
   let drawing = false;
   let strokeStart = null;
   let lastPoint = null;
+  let prevPoint = null; // Used for smooth Bézier midpoint interpolation
 
   const SHAPE_MAP = {
     'line': 2,
@@ -1338,7 +1780,7 @@
     if (!drawingEnabled) return;
     const p = canvasCoord(e);
     drawing = true;
-    strokeStart = p; lastPoint = p;
+    strokeStart = p; lastPoint = p; prevPoint = null;
     undoneCommands.length = 0;
     currentStrokeSize = 0;
     updateRedoButtonState();
@@ -1355,8 +1797,14 @@
         usedColor = `hsl(${currentHue}, 100%, 50%)`;
         currentHue = (currentHue + 2) % 360;
       }
+      // Draw an initial dot so a click with no movement is visible
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.lineWidth = brushSize;
+      ctx.strokeStyle = colorFromIdx(usedColor);
+      ctx.fillStyle = colorFromIdx(usedColor);
+      ctx.beginPath(); ctx.arc(p.x, p.y, brushSize / 2, 0, Math.PI * 2); ctx.fill();
       const cmd = [0, usedColor, brushSize, p.x, p.y, p.x, p.y];
-      drawCommands.push(cmd); renderCommand(cmd); pendingDrawCmds.push(cmd);
+      drawCommands.push(cmd); pendingDrawCmds.push(cmd);
       currentStrokeSize++;
     }
   });
@@ -1366,10 +1814,10 @@
     const p = canvasCoord(e);
     if (!drawing) return;
     if (tool === 'pencil' || tool === 'eraser' || tool === 'rainbow') {
-      // Improve interpolation and reduce network traffic: only draw if moved at least 2px
+      // Skip if barely moved (1px threshold — lower than before to capture slow strokes)
       const dx = p.x - lastPoint.x;
       const dy = p.y - lastPoint.y;
-      if (dx * dx + dy * dy < 4) return;
+      if (dx * dx + dy * dy < 1) return;
 
       let usedColor = colorIndex;
       if (tool === 'eraser') usedColor = secondaryColorIndex;
@@ -1377,11 +1825,34 @@
         usedColor = `hsl(${currentHue}, 100%, 50%)`;
         currentHue = (currentHue + 2) % 360;
       }
+
+      // === SMOOTH BEZIER MIDPOINT DRAWING ===
+      // Use the midpoint between lastPoint and current point as the Bézier end,
+      // and lastPoint as the control point. This produces buttery-smooth curves
+      // with zero visible cuts at segment joints (same technique as tldraw/excalidraw).
+      const mid = { x: (lastPoint.x + p.x) / 2, y: (lastPoint.y + p.y) / 2 };
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.lineWidth = brushSize;
+      ctx.strokeStyle = colorFromIdx(usedColor);
+      if (prevPoint) {
+        const prevMid = { x: (prevPoint.x + lastPoint.x) / 2, y: (prevPoint.y + lastPoint.y) / 2 };
+        ctx.beginPath();
+        ctx.moveTo(prevMid.x, prevMid.y);
+        ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, mid.x, mid.y);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(lastPoint.x, lastPoint.y);
+        ctx.lineTo(mid.x, mid.y);
+        ctx.stroke();
+      }
+
+      // Store segment command for network sync and undo
       const cmd = [0, usedColor, brushSize, lastPoint.x, lastPoint.y, p.x, p.y];
       drawCommands.push(cmd);
-      renderCommand(cmd);
       pendingDrawCmds.push(cmd);
       currentStrokeSize++;
+      prevPoint = lastPoint;
       lastPoint = p;
     } else if (tool === 'line' || tool === 'rect' || tool === 'circle' || tool === 'shape') {
       redrawAll();
@@ -1418,7 +1889,7 @@
       currentStrokeSize = 0;
     }
 
-    drawing = false; strokeStart = null; lastPoint = null;
+    drawing = false; strokeStart = null; lastPoint = null; prevPoint = null;
   }
 
   canvas.addEventListener('mouseup', endDraw);
@@ -1590,6 +2061,8 @@
     }
   }
 
+  let lastRenderedCmd = null;
+
   function renderCommand(c) {
     const [type, colIdx, size, x1, y1, x2, y2] = c;
     const color = colorFromIdx(colIdx);
@@ -1599,14 +2072,43 @@
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     if (type === 0) {
-      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-      if (x1 === x2 && y1 === y2) { ctx.beginPath(); ctx.arc(x1, y1, size / 2, 0, Math.PI * 2); ctx.fill(); }
+      let isContinuous = false;
+      let px1, py1, px2, py2;
+      if (lastRenderedCmd && lastRenderedCmd[0] === 0) {
+        px1 = lastRenderedCmd[3]; py1 = lastRenderedCmd[4]; px2 = lastRenderedCmd[5]; py2 = lastRenderedCmd[6];
+        if (x1 === px2 && y1 === py2 && colIdx === lastRenderedCmd[1] && size === lastRenderedCmd[2]) {
+          isContinuous = true;
+        }
+      }
+
+      ctx.beginPath();
+      if (isContinuous) {
+        const prevMidX = (px1 + px2) / 2;
+        const prevMidY = (py1 + py2) / 2;
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        ctx.moveTo(prevMidX, prevMidY);
+        ctx.quadraticCurveTo(x1, y1, midX, midY);
+      } else {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(midX, midY);
+      }
+      ctx.stroke();
+
+      // Draw a dot for single-point clicks
+      if (x1 === x2 && y1 === y2 && !isContinuous) { 
+        ctx.beginPath(); ctx.arc(x1, y1, size / 2, 0, Math.PI * 2); ctx.fill(); 
+      }
     } else if (type === 1) {
       floodFill(x1, y1, color);
     } else {
       drawShapePath(type, x1, y1, x2, y2);
       ctx.stroke();
     }
+    
+    lastRenderedCmd = c;
   }
 
   function drawShapePreview(p1, p2, t, colIdx, size) {
@@ -1618,10 +2120,11 @@
   }
 
   function clearCanvasLocal() {
-    ctx.save(); ctx.fillStyle = '#FBFCFD'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
+    ctx.save(); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
   }
   function redrawAll() {
     clearCanvasLocal();
+    lastRenderedCmd = null;
     drawCommands.forEach(renderCommand);
   }
 
@@ -1645,9 +2148,19 @@
     }
     ctx.putImageData(img, 0, 0);
   }
+  // Resolves ANY CSS color string (hex, hsl, rgb, named) to {r, g, b}
+  // by drawing 1px on a tiny offscreen canvas and reading it back.
+  const _colorResolveCanvas = document.createElement('canvas');
+  _colorResolveCanvas.width = 1;
+  _colorResolveCanvas.height = 1;
+  const _colorResolveCtx = _colorResolveCanvas.getContext('2d');
   function hexToRgb(h) {
-    const x = h.replace('#', '');
-    return { r: parseInt(x.slice(0, 2), 16), g: parseInt(x.slice(2, 4), 16), b: parseInt(x.slice(4, 6), 16) };
+    if (!h) return { r: 0, g: 0, b: 0 };
+    _colorResolveCtx.clearRect(0, 0, 1, 1);
+    _colorResolveCtx.fillStyle = h;
+    _colorResolveCtx.fillRect(0, 0, 1, 1);
+    const d = _colorResolveCtx.getImageData(0, 0, 1, 1).data;
+    return { r: d[0], g: d[1], b: d[2] };
   }
 
   // ============================ HOME ACTIONS ============================

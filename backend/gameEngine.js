@@ -46,6 +46,7 @@ class Room {
     this.ratings = new Map();         // raterPlayerId -> 0|1 for current drawing
     // Custom words mode (settings[7] = useOnly; this.customWords = array)
     this.customWords = [];
+    this.pastWords = new Set();
     // Per-player chat spam tracker
     this.chatTs = new Map();          // playerId -> array of timestamps
   }
@@ -284,6 +285,7 @@ class Room {
     }
     if (!word) word = this.pendingChoices[0];
     this.currentWord = word.toLowerCase();
+    this.pastWords.add(this.currentWord);
     clearTimeout(this.timer);
 
     const drawtime = this.settings[2];
@@ -485,13 +487,18 @@ class Room {
 
     // ---- Spam detection (packet id:32 / "Oa") ----
     // Keep a sliding window of recent chat timestamps; if > 4 messages in 3 s,
-    // warn the player privately and drop the message.
+    // warn the player privately and drop the message. If warned 3 times, kick them.
     const now = Date.now();
     let ts = this.chatTs.get(playerId) || [];
     ts = ts.filter((t) => now - t < 3000);
     ts.push(now);
     this.chatTs.set(playerId, ts);
     if (ts.length > 4) {
+      player.spamWarnCount = (player.spamWarnCount || 0) + 1;
+      if (player.spamWarnCount >= 3) {
+        this.removePlayer(playerId, 1); // Reason 1 is typically used for Kick
+        return;
+      }
       this.sendTo(playerId, 32, { id: 0, msg: 'You are typing too fast' });
       return;
     }
@@ -500,6 +507,16 @@ class Room {
     if (this.state.id === STATE.j && playerId === this.currentDrawerId) {
       const remaining = Math.max(0, this.settings[2] - (Date.now() - this.startTime) / 1000);
       if (remaining <= 10) {
+        // Anti-cheat: kick drawer if they type the exact word in the hint
+        if (this.currentWord) {
+          const normalizedMsg = msg.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+          const normalizedWord = this.currentWord.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+          if ((' ' + normalizedMsg + ' ').includes(' ' + normalizedWord + ' ')) {
+            this.broadcast(30, { id: 0, msg: `🚫 ${player.name} was kicked for typing the word in a hint!` });
+            this.removePlayer(playerId, 1);
+            return;
+          }
+        }
         // Send as a system message to distinguish it as a clue
         this.broadcast(30, { id: 0, msg: `💡 Clue from ${player.name}: ${msg}` });
       }
@@ -507,7 +524,8 @@ class Room {
     }
 
     if (this.state.id === STATE.j && this.currentWord) {
-      const guess = msg.toLowerCase();
+      // Normalize guess by replacing symbols with space and trimming extra spaces
+      const guess = msg.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
       if (guess === this.currentWord) {
         if (player.guessed) return;
         player.guessed = true;
@@ -652,18 +670,31 @@ class Room {
       }
       useOnly = !!payload.useOnly;
     }
-    // Limit + sanitize
-    words = words.filter((w) => w.length >= 2 && w.length <= 30).slice(0, 200);
+    // Limit + sanitize + deduplicate
+    words = [...new Set(words.filter((w) => w.length >= 2 && w.length <= 30))].slice(0, 200);
     this.customWords = words;
     this.settings[7] = useOnly ? 1 : 0;
     this.broadcast(12, { id: 7, val: this.settings[7] });
   }
   getWordChoices(count) {
     const useOnly = !!this.settings[7];
-    if (useOnly && this.customWords.length >= count) {
+    
+    // Prevent repeats from customWords
+    let availableCustom = this.customWords.filter(w => !this.pastWords.has(w));
+    
+    // If we need custom words but don't have enough fresh ones, reset history
+    if (useOnly && this.customWords.length >= count && availableCustom.length < count) {
+      this.pastWords.clear();
+      availableCustom = this.customWords;
+    } else if (!useOnly && this.customWords.length > 0 && availableCustom.length === 0) {
+      this.pastWords.clear();
+      availableCustom = this.customWords;
+    }
+
+    if (useOnly && availableCustom.length >= count) {
       // pick `count` unique custom words
       const picks = new Set();
-      const pool = [...this.customWords];
+      const pool = [...availableCustom];
       while (picks.size < count && pool.length) {
         const i = Math.floor(Math.random() * pool.length);
         picks.add(pool.splice(i, 1)[0]);
@@ -671,10 +702,10 @@ class Room {
       return Array.from(picks);
     }
     // Mix: half custom (if any), half language bank
-    const base = getWords(this.settings[0], count, this.modeId);
-    if (this.customWords.length === 0) return base;
-    const custom = [...this.customWords].sort(() => Math.random() - 0.5).slice(0, Math.ceil(count / 2));
-    const merged = [...new Set([...custom, ...base])].slice(0, count);
+    const base = getWords(this.settings[0], count, this.modeId, this.pastWords);
+    if (availableCustom.length === 0) return base;
+    const custom = [...availableCustom].sort(() => Math.random() - 0.5).slice(0, Math.ceil(count / 2));
+    const merged = [...new Set([...custom, ...base])].sort(() => Math.random() - 0.5).slice(0, count);
     return merged.length ? merged : base;
   }
 
@@ -759,6 +790,7 @@ class GameEngine {
     this.io = io;
     this.rooms = new Map();
     this.deletionTimeouts = new Map(); // [FIX H4] Always initialized — never undefined
+    this.disconnectTimers = new Map(); // Always initialized — prevents crash on first login before any disconnect
   }
   publicRoomForLang(langId, userId, modeId = 'all') {
     for (const room of this.rooms.values()) {

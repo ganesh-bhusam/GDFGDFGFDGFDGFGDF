@@ -313,7 +313,6 @@ io.on('connection', (socket) => {
     if (!room) return;
     const playerId = socket.playerId;
     const roomId   = socket.roomId;
-    if (!engine.disconnectTimers) engine.disconnectTimers = new Map();
     const tId = setTimeout(() => {
       engine.disconnectTimers.delete(playerId);
       const currentRoom = engine.getRoom(roomId);

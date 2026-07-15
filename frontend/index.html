@@ -311,7 +311,7 @@
             <!-- Interactive grid settings options -->
             <div class="settings-grid" id="settings-grid"></div>
             <!-- Custom words configuration text field inputs -->
-            <div class="custom-words-wrap">
+            <div class="custom-words-wrap" id="custom-words-wrap">
               <button id="open-custom-words-modal" class="btn btn-play-blue" type="button" style="width: 100%; margin-bottom: 8px; padding: 10px; font-size: 14px;">✎ Manage Custom Words</button>
               <label class="custom-words-only">
                 <input type="checkbox" id="custom-words-only" data-testid="custom-words-only">
@@ -324,11 +324,16 @@
               <div style="color: #a5b4fc; font-weight: 600; font-size: 14px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;">Room Code</div>
               <div id="display-room-code" style="font-size: 28px; font-weight: 800; color: #fff; letter-spacing: 3px; user-select: all; cursor: text;">------</div>
             </div>
+            
+            <div id="waiting-host-text" style="display: none; text-align: center; font-weight: bold; font-size: 18px; color: #fbbf24; margin-bottom: 15px; padding: 10px; background: rgba(251, 191, 36, 0.1); border-radius: 6px; border: 1px dashed rgba(251, 191, 36, 0.5);">
+              ⏳ Waiting for host to start...
+            </div>
+
             <div class="group-buttons">
               <button id="button-start-game" class="btn btn-play-green" data-testid="start-game-button">Start!</button>
               <button id="button-invite" class="btn btn-play-blue" data-testid="invite-button">Copy Invite Link</button>
             </div>
-            <p class="room-hint">Share your invite link to play with friends. Minimum 2 players to start.</p>
+            <p class="room-hint" id="room-start-hint">Share your invite link to play with friends. Minimum 2 players to start.</p>
           </div>
         </div>
       </main>
@@ -360,8 +365,80 @@
               <div class="secondary" id="color-secondary"></div>
             </div>
           </button>
-          <!-- Color Ring = Random Color -->
-          <button class="tool-btn tb-ring-btn" id="color-wheel" type="button" title="Random Color">🎨</button>
+          <!-- Advanced Color Picker -->
+          <div class="tb-group tb-adv-colors-group">
+            <button class="tool-btn tb-trigger" id="adv-color-picker-btn" type="button" title="Advanced Color Picker">🎨</button>
+            <div class="tb-popup tb-popup-adv-colors glass-panel" id="tb-popup-adv-colors" style="width: 480px; padding: 10px; right: -50px;">
+              <div class="adv-color-app">
+                <!-- TOP: wheel + value/alpha + preview -->
+                <div class="top-section">
+                  <div class="wheel-wrap">
+                    <canvas id="wheelCanvas" width="150" height="150"></canvas>
+                    <div class="wheel-dot" id="wheelDot"></div>
+                  </div>
+
+                  <div class="vsliders">
+                    <div class="vslider" id="vSlider"><div class="mark" id="vMark"></div></div>
+                    <div class="vslider checker" id="aSlider"><div class="mark" id="aMark"></div></div>
+                  </div>
+
+                  <div class="preview-col">
+                    <div id="previewSwatch" class="checker"><div class="fill" id="previewFill"></div></div>
+                    <label class="srgb-row"><input type="checkbox" id="srgbCheck" checked> sRGB preview</label>
+                    <div class="icon-row">
+                      <div class="icon-btn" id="spectrumBtn" title="Spectrum">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18"/></svg>
+                      </div>
+                      <div class="icon-btn" id="dropperBtn" title="Eyedropper">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.5 4.5a2.1 2.1 0 010 3l-9 9-3.5 1 1-3.5 9-9a2.1 2.1 0 013-.5z"/><path d="M13 8l3 3"/></svg>
+                      </div>
+                      <div class="icon-btn" id="folderBtn" title="Save">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1z"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- MIDDLE: RGBA / HSV sliders -->
+                <div class="value-section">
+                  <div class="value-col" id="rgbaCol"></div>
+                  <div class="value-col" id="hsvCol">
+                    <div id="hsvSliders"></div>
+                    <div class="hex-row">
+                      <label class="small">Hex</label>
+                      <input id="hexInput" type="text" maxlength="8" spellcheck="false">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- PALETTE -->
+                <div class="palette-section">
+                  <div class="palette-head">
+                    <span class="caret">▾</span><span>Palette</span>
+                  </div>
+                  <div class="palette-grid" id="paletteGrid"></div>
+                </div>
+
+                <!-- PBR -->
+                <div class="pbr-section">
+                  <div class="pbr-col">
+                    <label class="small">Metallic <span id="metallicVal"></span></label>
+                    <div class="hslider" id="metallicSlider"><div class="mark"></div></div>
+                  </div>
+                  <div class="pbr-col">
+                    <label class="small">Roughness <span id="roughnessVal"></span></label>
+                    <div class="hslider" id="roughnessSlider"><div class="mark"></div></div>
+                  </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="footer-section">
+                  <label class="overwrite-row"><input type="checkbox" id="overwriteCheck"> Overwrite color picker on sample</label>
+                  <button id="eyedropBtn"><span class="eyedrop-swatch" id="eyedropSwatch"></span>3D Eyedropper</button>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- Popup: ALL color swatches (standard + premium) -->
           <div class="tb-popup tb-popup-colors glass-panel" id="tb-popup-colors">
             <div class="popup-color-label">Standard</div>
