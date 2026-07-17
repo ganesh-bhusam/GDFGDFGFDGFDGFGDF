@@ -4747,3 +4747,161 @@ select option {
   background: #fff;
   border: 1px solid rgba(0,0,0,0.4);
 }
+
+/* =========================================================
+   NEW OVERLAY STYLES
+   ========================================================= */
+
+/* Idle drift for splats */
+@keyframes splatDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6px, -8px) scale(1.04); }
+}
+.splat { position: absolute; border-radius: 50%; opacity: 0.26; pointer-events: none; animation: splatDrift 7s ease-in-out infinite; z-index: 0; }
+.splat-1 { width: 100px; height: 80px; top: 40px; left: 50px; background: #EF9F27; border-radius: 55% 45% 60% 40% / 50% 60% 40% 50%; animation-duration: 8.5s; }
+.splat-2 { width: 70px; height: 70px; bottom: 50px; left: 70px; background: #1D9E75; border-radius: 40% 60% 50% 50% / 55% 45% 55% 45%; animation-duration: 6.5s; animation-delay: 0.4s; }
+.splat-3 { width: 90px; height: 90px; top: 50px; right: 60px; background: #D4537E; border-radius: 60% 40% 55% 45% / 45% 55% 45% 55%; opacity: 0.2; animation-duration: 9s; animation-delay: 1s; }
+.splat-4 { width: 50px; height: 50px; bottom: 60px; right: 50px; background: #7F77DD; border-radius: 50%; animation-duration: 5.8s; animation-delay: 0.7s; }
+.splat-5 { width: 40px; height: 40px; top: 260px; left: 20px; background: #D4537E; border-radius: 50%; opacity: 0.18; animation-duration: 5.5s; animation-delay: 0.9s; }
+.splat-6 { width: 34px; height: 34px; top: 340px; right: 30px; background: #7F77DD; border-radius: 50%; opacity: 0.2; animation-duration: 6s; animation-delay: 1.5s; }
+
+/* Word Selection UI */
+#timer-bar { width: 320px; height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; margin: 0 auto 28px; overflow: hidden; position: relative; }
+#timer-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #1D9E75, #5DCAA5); transition: width 0.1s linear, background 0.3s ease; }
+
+.word-card {
+  padding: 10px 20px; font-size: 16px; font-weight: 600; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.15); background: #2b2733; color: #fff; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.25); position: relative; overflow: visible; margin: 8px;
+}
+.word-card:hover { border-color: rgba(255,255,255,0.4); }
+.word-card.selected { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,0.4); }
+
+@keyframes cardSplash {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+  55%  { opacity: 1; transform: scale(1.1) rotate(4deg); }
+  75%  { transform: scale(0.95) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.word-card.pop-in { animation: cardSplash 0.45s cubic-bezier(.2,1.6,.4,1) both; }
+
+.drip-dot { position: fixed; pointer-events: none; border-radius: 50%; z-index: 1000; }
+@keyframes dripFall {
+  0% { opacity: 0.9; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(14px) scale(0.4); }
+}
+
+@keyframes urgentShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.urgent-pulse { animation: urgentShake 0.28s ease-in-out infinite; }
+
+.wait-dots span { animation: waitPulse 1.4s infinite; opacity: 0; }
+.wait-dots span:nth-child(2) { animation-delay: 0.2s; }
+.wait-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes waitPulse { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+/* Round Score Overlay */
+#overlay-reveal {
+  width: 400px; max-height: 520px; color: #fff; text-align: center; position: relative; z-index: 1;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px; padding: 16px 20px; margin: 0 auto;
+}
+#overlay-reveal::before {
+  content: ''; position: absolute; inset: 0; border-radius: 18px;
+  background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 4px 4px; pointer-events: none;
+}
+
+#reveal-label { font-size: 13px; color: rgba(255,255,255,0.65); margin: 0; position: relative; }
+
+#reveal-word {
+  font-size: 24px; font-weight: 700; margin: 4px 0; position: relative;
+  background: linear-gradient(90deg, #00B7E0, #1F4FE0);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  display: inline-block;
+  clip-path: inset(0 100% 0 0);
+  animation: brushReveal 0.7s cubic-bezier(.3,.8,.4,1) 0.15s forwards;
+}
+@keyframes brushReveal { to { clip-path: inset(0 0 0 0); } }
+
+#reveal-reason { font-size: 13px; color: rgba(255,255,255,0.65); margin-bottom: 16px; position: relative; }
+
+#reveal-scores { display: flex; flex-direction: column; gap: 6px; position: relative; }
+
+.score-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  border-radius: 12px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.score-row.has-points { background: rgba(29, 158, 117, 0.16); border-color: rgba(61, 220, 160, 0.35); }
+
+.avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; position: relative; box-shadow: 0 0 0 3px rgba(255,255,255,0.08); overflow: hidden; }
+
+.name-wrap { flex: 1; text-align: left; }
+.name { font-size: 14px; font-weight: 600; display: flex; align-items: center; }
+.streak-badge { margin-left: 8px; font-size: 11px; color: #EF9F27; font-weight: 600; }
+.sub-label { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 1px; }
+
+.row-value { font-size: 15px; font-weight: 700; min-width: 50px; text-align: right; }
+
+.splatter-piece { position: absolute; pointer-events: none; z-index: 10; }
+
+@keyframes splashIn {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-8deg); }
+  55%  { opacity: 1; transform: scale(1.08) rotate(3deg); }
+  75%  { transform: scale(0.96) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.score-row.pop-in, .podest-player.pop-in, .rank-entry.pop-in { animation: splashIn 0.5s cubic-bezier(.2,1.6,.4,1) both; }
+
+/* Final Scoreboard */
+#overlay-result {
+  width: 520px; max-height: 540px; color: #fff; text-align: center; position: relative; z-index: 1;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px; padding: 26px 30px; margin: 0 auto;
+}
+#overlay-result::before {
+  content: ''; position: absolute; inset: 0; border-radius: 18px;
+  background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 4px 4px; pointer-events: none;
+}
+
+#overlay-result .message { font-size: 20px; margin-bottom: 20px; position: relative; }
+
+.winner-name {
+  font-weight: 700; position: relative; display: inline-block;
+  background: linear-gradient(90deg, #EF9F27, #D85A30);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  clip-path: inset(0 100% 0 0);
+  animation: brushReveal 0.7s cubic-bezier(.3,.8,.4,1) 0.2s forwards;
+}
+
+#podests { display: flex; align-items: flex-end; justify-content: center; gap: 16px; margin-bottom: 20px; position: relative; }
+.podest { display: flex; flex-direction: column; align-items: center; }
+.podest-player { display: flex; flex-direction: column; align-items: center; }
+.podest-avatar { width: 40px; height: 40px; border-radius: 50%; margin-bottom: 6px; box-shadow: 0 0 0 3px rgba(255,255,255,0.1); overflow: hidden; }
+.podest-name { font-size: 13px; font-weight: 600; }
+.podest-score { font-size: 11px; color: rgba(255,255,255,0.65); }
+.podest-block {
+  margin-top: 8px; background: rgba(255,255,255,0.08); border-radius: 10px 10px 0 0;
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 6px;
+  font-size: 15px; font-weight: 700; border: 1px solid rgba(255,255,255,0.1); border-bottom: none;
+}
+
+.podest-1 .podest-avatar {
+  width: 52px; height: 52px; overflow: hidden;
+  box-shadow: 0 0 0 3px #1e1b26, 0 0 0 6px #EF9F27, 0 0 0 8px rgba(239,159,39,0.35);
+}
+.podest-1 .podest-block { width: 90px; height: 90px; background: rgba(239,159,39,0.14); }
+.podest-2 .podest-block { width: 78px; height: 62px; }
+.podest-3 .podest-block { width: 78px; height: 40px; }
+
+#ranks-list { display: flex; flex-direction: column; gap: 6px; position: relative; }
+.rank-entry { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+.rank-avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; overflow: hidden; }
+.rank-name { flex: 1; text-align: left; font-size: 14px; font-weight: 600; }
+.rank-num { font-size: 12px; color: rgba(255,255,255,0.55); min-width: 24px; }
+.rank-score { font-size: 14px; font-weight: 600; min-width: 60px; text-align: right; }

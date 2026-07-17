@@ -31,6 +31,57 @@
   // 10 classic skribbl-style head colors (indices match data-color CSS)
   const HEAD_COLORS = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink', 'mint', 'gold'];
 
+  const ELEMENTS = [
+    { name:"Classic", c1:"#FFDE7A", c2:"#FDC846", glow:"#FDC846", ink:"#1a1a1a" },
+    { name:"Fire",   c1:"#FFB020", c2:"#FF5A36", glow:"#FF5A36", ink:"#3a1400" },
+    { name:"Water",  c1:"#8FE3FF", c2:"#2FB8E8", glow:"#2FB8E8", ink:"#04263a" },
+    { name:"Nature", c1:"#B6FF9C", c2:"#3FBE72", glow:"#3FBE72", ink:"#0b3a1c" },
+    { name:"Storm",  c1:"#C7B8FF", c2:"#8B7CF6", glow:"#8B7CF6", ink:"#1c1240" },
+    { name:"Shadow", c1:"#8a6bd6", c2:"#2b1b44", glow:"#6B4FA0", ink:"#efe9ff" },
+    { name:"Light",  c1:"#FFFFFF", c2:"#FFE9A8", glow:"#FFE9A8", ink:"#3a2e05" }
+  ];
+
+  const EXPRESSIONS = [
+    { name:"Happy", face:(ink)=>`<circle cx="82" cy="92" r="6" fill="${ink}"/><circle cx="118" cy="92" r="6" fill="${ink}"/><path d="M80 114 Q100 132 120 114" stroke="${ink}" stroke-width="5" fill="none" stroke-linecap="round"/>` },
+    { name:"Fierce", face:(ink)=>`<path d="M74 86 L92 94" stroke="${ink}" stroke-width="6" stroke-linecap="round"/><path d="M126 86 L108 94" stroke="${ink}" stroke-width="6" stroke-linecap="round"/><circle cx="86" cy="98" r="4.5" fill="${ink}"/><circle cx="114" cy="98" r="4.5" fill="${ink}"/><path d="M82 118 L118 118" stroke="${ink}" stroke-width="5" stroke-linecap="round"/>` },
+    { name:"Cool", face:(ink)=>`<rect x="70" y="88" width="26" height="10" rx="5" fill="${ink}"/><rect x="104" y="88" width="26" height="10" rx="5" fill="${ink}"/><rect x="96" y="91" width="8" height="4" fill="${ink}"/><path d="M86 116 Q100 122 114 114" stroke="${ink}" stroke-width="5" fill="none" stroke-linecap="round"/>` },
+    { name:"Sleepy", face:(ink)=>`<path d="M74 92 Q82 86 90 92" stroke="${ink}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M110 92 Q118 86 126 92" stroke="${ink}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="100" cy="120" r="6" fill="none" stroke="${ink}" stroke-width="4"/>` },
+    { name:"Star-Eyed", face:(ink)=>{
+        const star=(cx,cy)=>{let pts=[];for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5;const r=i%2===0?9:4;pts.push((cx+r*Math.cos(a)).toFixed(1)+","+(cy-r*Math.sin(a)).toFixed(1));}return `<polygon points="${pts.join(' ')}" fill="${ink}"/>`;};
+        return star(83,93)+star(117,93)+`<ellipse cx="100" cy="120" rx="10" ry="7" fill="${ink}"/>`;
+      }},
+    { name:"Grin", face:(ink)=>`<circle cx="83" cy="92" r="6" fill="${ink}"/><circle cx="117" cy="92" r="6" fill="${ink}"/><path d="M78 112 Q100 134 122 112 Q100 122 78 112 Z" fill="${ink}"/>` },
+    { name:"Angry", face:(ink)=>`<path d="M74 84 L100 96 L126 84" stroke="${ink}" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="86" cy="98" r="4" fill="${ink}"/><circle cx="114" cy="98" r="4" fill="${ink}"/><path d="M80 122 L120 122" stroke="${ink}" stroke-width="5" stroke-linecap="round"/>` },
+    { name:"Surprised", face:(ink)=>`<circle cx="83" cy="94" r="8" fill="none" stroke="${ink}" stroke-width="4"/><circle cx="117" cy="94" r="8" fill="none" stroke="${ink}" stroke-width="4"/><circle cx="83" cy="94" r="3" fill="${ink}"/><circle cx="117" cy="94" r="3" fill="${ink}"/><ellipse cx="100" cy="122" rx="8" ry="10" fill="${ink}"/>` }
+  ];
+
+  function avatarSVG(elIdx, exIdx, uid, size) {
+    const el = ELEMENTS[((elIdx % ELEMENTS.length) + ELEMENTS.length) % ELEMENTS.length];
+    const ex = EXPRESSIONS[((exIdx % EXPRESSIONS.length) + EXPRESSIONS.length) % EXPRESSIONS.length];
+    const gid = 'av-grad-' + uid;
+    return `<svg viewBox="0 0 200 200" width="${size}" height="${size}" style="display:block;">
+      <defs><radialGradient id="${gid}" cx="35%" cy="30%" r="75%">
+        <stop offset="0%" stop-color="${el.c1}"/><stop offset="100%" stop-color="${el.c2}"/>
+      </radialGradient></defs>
+      <circle cx="100" cy="100" r="94" fill="${el.c2}" opacity="0.22"/>
+      <circle cx="100" cy="100" r="78" fill="url(#${gid})"/>
+      <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="4"/>
+      ${ex.face(el.ink)}
+    </svg>`;
+  }
+
+  function renderAvatarTo(domEl, avatarArr, uid, size) {
+    let elIdx = 0; let exIdx = 0;
+    if (avatarArr && avatarArr.length >= 2) {
+      elIdx = avatarArr[0];
+      exIdx = avatarArr[1];
+    } else if (avatarArr && avatarArr.length === 1) {
+      elIdx = avatarArr[0] % ELEMENTS.length;
+      exIdx = 0;
+    }
+    domEl.innerHTML = avatarSVG(elIdx, exIdx, uid, size);
+  }
+
   // ============================ STATE ============================
   let socket = null;
   let me = null;
@@ -556,11 +607,12 @@
   }
 
   function setAvatar(idx) {
-    avatarIdx = ((idx % HEAD_COLORS.length) + HEAD_COLORS.length) % HEAD_COLORS.length;
-    const big = $('avatar-big-head');
-    if (big) {
-      big.setAttribute('data-color', HEAD_COLORS[avatarIdx]);
-      big.animate(
+    const total = ELEMENTS.length * EXPRESSIONS.length;
+    avatarIdx = ((idx % total) + total) % total;
+    const preview = $('avatar-preview');
+    if (preview) {
+      renderAvatarTo(preview, [Math.floor(avatarIdx / EXPRESSIONS.length), avatarIdx % EXPRESSIONS.length], 'lobby-big', 120);
+      preview.animate(
         [
           { transform: 'scale(0.8) scaleX(1.1) rotate(-8deg)' }, 
           { transform: 'scale(1.05) scaleX(0.95) rotate(3deg)' },
@@ -573,7 +625,7 @@
   function pickAvatar(dir) { setAvatar(avatarIdx + dir); }
 
   function avatarPayload() {
-    return [avatarIdx, 0, 0, -1];
+    return [Math.floor(avatarIdx / EXPRESSIONS.length), avatarIdx % EXPRESSIONS.length, 0, -1];
   }
 
   // ============================ SOCKET ============================
@@ -941,13 +993,59 @@
       const isDrawer = currentDrawerId === me;
       overlay.classList.add('active');
       overlayContent.classList.add('active');
+      if ($('timer-bar')) $('timer-bar').classList.add('active');
+      const isCombination = room && room.settings[6] === 2;
+      const choiceText = $('overlay-text');
+      const wordsWrap = $('overlay-words');
+      if (choiceText) choiceText.classList.add('active');
+      if (wordsWrap) wordsWrap.classList.add('active');
+      const timerFill = $('timer-fill');
+      
+      const dripColors = ['#EF9F27', '#1D9E75', '#D4537E', '#7F77DD'];
+      function spawnDrip(x, y) {
+        const dot = document.createElement('div');
+        dot.className = 'drip-dot';
+        const size = 4 + Math.random() * 5;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.background = dripColors[Math.floor(Math.random() * dripColors.length)];
+        dot.style.left = (x + (Math.random() * 16 - 8)) + 'px';
+        dot.style.top = (y + (Math.random() * 6)) + 'px';
+        dot.style.animation = 'dripFall 0.6s ease-out forwards';
+        document.body.appendChild(dot);
+        setTimeout(() => dot.remove(), 650);
+      }
+
+      let elapsed = 0;
+      let timer = null;
+      const PICK_SECONDS = s.time || 15;
+      function startTimer(autoPick) {
+        clearInterval(timer);
+        if (timerFill) {
+          timerFill.style.width = '100%';
+          timerFill.style.background = 'linear-gradient(90deg, #1D9E75, #5DCAA5)';
+        }
+        wordsWrap.classList.remove('urgent-pulse');
+        timer = setInterval(() => {
+          elapsed += 100;
+          const remaining = PICK_SECONDS - elapsed / 1000;
+          const pct = Math.min(100, (elapsed / (PICK_SECONDS * 1000)) * 100);
+          if (timerFill) {
+            timerFill.style.width = (100 - pct) + '%';
+            if (remaining <= 6 && remaining > 3) timerFill.style.background = '#D85A30';
+            else if (remaining <= 3 && remaining > 0) { timerFill.style.background = '#E24B4A'; wordsWrap.classList.add('urgent-pulse'); }
+          }
+          if (pct >= 100) {
+            clearInterval(timer);
+            wordsWrap.classList.remove('urgent-pulse');
+          }
+        }, 100);
+      }
+
       if (isDrawer && s.data?.words) {
-        $('overlay-words').classList.add('active');
-        $('overlay-text').classList.add('active');
-        $('overlay-words').innerHTML = '';
-        const isCombination = room && room.settings[6] === 2;
+        if (wordsWrap) wordsWrap.innerHTML = '';
         if (isCombination) {
-          $('overlay-text').textContent = 'Choose the first word';
+          choiceText.textContent = 'Choose the first word';
           const half = s.data.words.length / 2;
           const firstHalf = s.data.words.slice(0, half);
           const secondHalf = s.data.words.slice(half);
@@ -955,38 +1053,59 @@
           firstHalf.forEach((w, i) => {
             const btn = el('button', 'word-card', w);
             btn.dataset.testid = 'word-choice-' + i;
+            let dripInterval = null;
+            btn.addEventListener('mouseenter', (e) => { dripInterval = setInterval(() => spawnDrip(e.clientX, e.clientY + 18), 180); });
+            btn.addEventListener('mouseleave', () => { clearInterval(dripInterval); });
             btn.addEventListener('click', () => {
               firstChoiceIdx = i;
-              $('overlay-text').textContent = 'Choose the second word';
-              $('overlay-words').innerHTML = '';
+              choiceText.textContent = 'Choose the second word';
+              wordsWrap.innerHTML = '';
               secondHalf.forEach((w2, j) => {
                 const btn2 = el('button', 'word-card', w2);
                 btn2.dataset.testid = 'word-choice-second-' + j;
+                let dripInterval2 = null;
+                btn2.addEventListener('mouseenter', (e) => { dripInterval2 = setInterval(() => spawnDrip(e.clientX, e.clientY + 18), 180); });
+                btn2.addEventListener('mouseleave', () => { clearInterval(dripInterval2); });
                 btn2.addEventListener('click', () => {
+                  btn2.classList.add('selected');
+                  clearInterval(timer);
+                  wordsWrap.classList.remove('urgent-pulse');
                   send(18, [firstChoiceIdx, j]);
-                  $('overlay-words').innerHTML = '';
+                  setTimeout(() => { wordsWrap.innerHTML = ''; }, 300);
                 });
-                $('overlay-words').appendChild(btn2);
+                wordsWrap.appendChild(btn2);
+                setTimeout(() => btn2.classList.add('pop-in'), j * 100);
               });
             });
-            $('overlay-words').appendChild(btn);
+            wordsWrap.appendChild(btn);
+            setTimeout(() => btn.classList.add('pop-in'), i * 100);
           });
+          startTimer(true);
         } else {
-          $('overlay-text').textContent = 'Choose a word to draw';
+          choiceText.textContent = 'Choose a word to draw';
           s.data.words.forEach((w, i) => {
             const c = el('button', 'word-card', w);
             c.dataset.testid = 'word-choice-' + i;
+            let dripInterval = null;
+            c.addEventListener('mouseenter', (e) => { dripInterval = setInterval(() => spawnDrip(e.clientX, e.clientY + 18), 180); });
+            c.addEventListener('mouseleave', () => { clearInterval(dripInterval); });
             c.addEventListener('click', () => {
+              c.classList.add('selected');
+              clearInterval(timer);
+              wordsWrap.classList.remove('urgent-pulse');
               send(18, i);
-              $('overlay-words').innerHTML = '';
+              setTimeout(() => { wordsWrap.innerHTML = ''; choiceText.textContent = w + ' selected'; }, 300);
             });
-            $('overlay-words').appendChild(c);
+            wordsWrap.appendChild(c);
+            setTimeout(() => c.classList.add('pop-in'), i * 100);
           });
+          startTimer(true);
         }
       } else {
         const drawer = players.find((p) => p.id === currentDrawerId);
-        $('overlay-text').classList.add('active');
-        $('overlay-text').textContent = (drawer?.name || 'Someone') + ' is choosing a word…';
+        choiceText.innerHTML = (drawer?.name || 'Someone') + ' is choosing a word<span class="wait-dots"><span>.</span><span>.</span><span>.</span></span>';
+        if (wordsWrap) wordsWrap.innerHTML = '';
+        startTimer(false);
       }
       $('game-word').querySelector('.word').textContent = '—';
       updatePlayersList();
@@ -1086,41 +1205,83 @@
       if (revealScores) {
         revealScores.innerHTML = '';
         const sortedScores = [];
-        for (let i = 0; i < sc.length; i += 3) {
-          const pid = sc[i], score = sc[i + 1], delta = sc[i + 2];
+        for (let i = 0; i < sc.length; i += 4) {
+          const pid = sc[i], score = sc[i + 1], delta = sc[i + 2], guessTime = sc[i + 3];
           const p = players.find((x) => x.id === pid);
           if (p) {
-            sortedScores.push({ player: p, score, delta });
+            sortedScores.push({ player: p, score, delta, guessTime });
           }
         }
         
         // Sort by delta desc so scorers show first, followed by score desc
         sortedScores.sort((a, b) => b.delta - a.delta || b.score - a.score);
         
-        sortedScores.forEach(({ player, score, delta }, idx) => {
-          const row = el('div', 'reveal-score-row');
+        function animateCount(el, val) {
+          let c = 0; const step = Math.max(1, Math.floor(val / 15));
+          const t = setInterval(() => { c += step; if(c >= val){ c = val; clearInterval(t); } el.textContent = '+' + c; }, 30);
+        }
+        function burstSplatter(avEl) {
+          const c = ['#EF9F27', '#1D9E75', '#D4537E'];
+          for(let i=0; i<4; i++){
+            const p = document.createElement('div');
+            p.className = 'splatter-piece';
+            p.style.width = (4+Math.random()*6)+'px'; p.style.height = p.style.width;
+            p.style.background = c[Math.floor(Math.random()*c.length)];
+            p.style.borderRadius = '50%';
+            p.style.left = '16px'; p.style.top = '16px';
+            const ang = Math.random()*Math.PI*2; const dist = 20+Math.random()*20;
+            p.style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px)`;
+            p.style.transition = 'all 0.4s ease-out';
+            avEl.appendChild(p);
+            setTimeout(()=>p.style.opacity='0', 300);
+            setTimeout(()=>p.remove(), 400);
+          }
+        }
+
+        sortedScores.forEach(({ player, score, delta, guessTime }, idx) => {
+          const row = document.createElement('div');
+          row.className = 'score-row';
           if (delta > 0) row.classList.add('has-points');
           
-          // Build avatar
-          const av = el('div', 'char-head small');
-          const c = HEAD_COLORS[(player.avatar && player.avatar[0] != null ? player.avatar[0] : 0) % HEAD_COLORS.length];
-          av.setAttribute('data-color', c);
-          const face = el('div', 'face');
-          av.appendChild(face);
+          const av = document.createElement('div');
+          av.className = 'avatar';
+          renderAvatarTo(av, player.avatar, 'rnd-'+player.id, 32);
           
-          const nameSpan = el('span', 'player-name', player.name);
-          const pointsSpan = el('span', 'player-points', delta > 0 ? `+${delta}` : '0');
-          const totalSpan = el('span', 'player-total', `${score} pts`);
+          const nw = document.createElement('div');
+          nw.className = 'name-wrap';
+          nw.innerHTML = `<div class="name">${escapeHTML(player.name)}<span class="streak-badge"></span></div><div class="sub-label">Total: ${score}</div>`;
           
-          row.appendChild(av);
-          row.appendChild(nameSpan);
-          row.appendChild(pointsSpan);
-          row.appendChild(totalSpan);
+          const ptsWrap = document.createElement('div');
+          ptsWrap.style.display = 'flex';
+          ptsWrap.style.alignItems = 'center';
+          ptsWrap.style.gap = '12px';
+
+          if (guessTime > 0 && player.id !== currentDrawerId) {
+            const timeBadge = document.createElement('div');
+            timeBadge.style.display = 'flex';
+            timeBadge.style.alignItems = 'center';
+            timeBadge.style.gap = '4px';
+            timeBadge.style.fontSize = '12px';
+            timeBadge.style.color = 'rgba(255,255,255,0.5)';
+            timeBadge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ${guessTime}s`;
+            ptsWrap.appendChild(timeBadge);
+          }
+
+          const pts = document.createElement('div');
+          pts.className = 'row-value';
+          pts.style.color = delta > 0 ? '#3DDCA0' : 'rgba(255,255,255,0.3)';
+          pts.textContent = delta > 0 ? '+0' : '0';
+          ptsWrap.appendChild(pts);
           
-          // Add staggered entrance animations
-          row.style.animationDelay = `${idx * 0.08}s`;
-          
+          row.appendChild(av); row.appendChild(nw); row.appendChild(ptsWrap);
           revealScores.appendChild(row);
+          
+          setTimeout(() => {
+            row.classList.add('pop-in');
+            if (delta > 0) {
+              setTimeout(() => { animateCount(pts, delta); burstSplatter(av); }, 200);
+            }
+          }, idx * 120);
         });
       }
 
@@ -1139,7 +1300,7 @@
       for (let rank = 1; rank <= 3; rank++) {
         const slot = $('podest-slot-' + rank);
         if (slot) {
-          slot.innerHTML = `<div class="rank">${rank}</div>`;
+          slot.innerHTML = `<div class="podest-block"><span class="rank-tag">${rank}</span></div>`;
         }
       }
 
@@ -1166,12 +1327,8 @@
             if (slot) {
               const playerDiv = el('div', 'podest-player');
               
-              // Build avatar
-              const av = el('div', 'char-head'); // regular size for podium!
-              const c = HEAD_COLORS[(p.avatar && p.avatar[0] != null ? p.avatar[0] : 0) % HEAD_COLORS.length];
-              av.setAttribute('data-color', c);
-              const face = el('div', 'face');
-              av.appendChild(face);
+              const av = el('div', 'podest-avatar');
+              renderAvatarTo(av, p.avatar, 'pod-'+p.id, rank === 1 ? 52 : 40);
               
               const nameDiv = el('div', 'podest-name', p.name);
               const scoreDiv = el('div', 'podest-score', p.score + ' pts');
@@ -1181,11 +1338,20 @@
               playerDiv.appendChild(scoreDiv);
               
               slot.insertBefore(playerDiv, slot.firstChild);
+              setTimeout(() => playerDiv.classList.add('pop-in'), rank * 150);
             }
           } else {
-            const row = el('div', 'rank-row');
-            row.innerHTML = `<span><b>#${rank}</b> ${escapeHTML(p.name)}</span><span>${p.score} pts</span>`;
+            const row = document.createElement('div');
+            row.className = 'rank-entry';
+            const rnum = document.createElement('div'); rnum.className = 'rank-num'; rnum.textContent = '#' + rank;
+            const av = document.createElement('div'); av.className = 'rank-avatar';
+            renderAvatarTo(av, p.avatar, 'rnk-'+p.id, 30);
+            const rname = document.createElement('div'); rname.className = 'rank-name'; rname.textContent = escapeHTML(p.name);
+            const rscore = document.createElement('div'); rscore.className = 'rank-score'; rscore.textContent = p.score + ' pts';
+            
+            row.appendChild(rnum); row.appendChild(av); row.appendChild(rname); row.appendChild(rscore);
             list.appendChild(row);
+            setTimeout(() => row.classList.add('pop-in'), rank * 100);
           }
         });
       } catch (e) {
@@ -1200,8 +1366,28 @@
       return;
     }
     const isHidden = room && room.settings[6] === 1 && currentDrawerId !== me;
-    const s = wordHints.map((c) => (c === null ? (isHidden ? '?' : '_') : c)).join(' ');
-    $('game-word').querySelector('.word').textContent = s;
+    
+    let html = '';
+    let currentWordLen = 0;
+    
+    for (let i = 0; i < wordHints.length; i++) {
+      const c = wordHints[i];
+      if (c === ' ') {
+        if (currentWordLen > 0 && currentDrawerId !== me) {
+          html = html.trimEnd() + `<sup style="font-size:0.55em; opacity:0.7; margin-left: 4px; vertical-align: super;">${currentWordLen}</sup>`;
+        }
+        html += '&nbsp;&nbsp;&nbsp;&nbsp;'; // Clear gap for space
+        currentWordLen = 0;
+      } else {
+        html += (c === null ? (isHidden ? '?' : '_') : c) + ' ';
+        currentWordLen++;
+      }
+    }
+    if (currentWordLen > 0 && currentDrawerId !== me) {
+      html = html.trimEnd() + `<sup style="font-size:0.55em; opacity:0.7; margin-left: 4px; vertical-align: super;">${currentWordLen}</sup>`;
+    }
+    
+    $('game-word').querySelector('.word').innerHTML = html;
   }
 
   function showRoomSettings(settings, isOwner) {
@@ -1278,12 +1464,14 @@
       if (p.id === me) card.classList.add('me');
       if (p.id === currentDrawerId) card.classList.add('drawer');
       if (p.guessed) card.classList.add('guessed');
-      // Use mini colored head
-      const av = el('div', 'char-head small');
-      const c = HEAD_COLORS[(p.avatar && p.avatar[0] != null ? p.avatar[0] : 0) % HEAD_COLORS.length];
-      av.setAttribute('data-color', c);
-      const face = el('div', 'face');
-      av.appendChild(face);
+      const av = document.createElement('div');
+      av.className = 'avatar';
+      av.style.width = '38px';
+      av.style.height = '38px';
+      av.style.borderRadius = '50%';
+      av.style.flexShrink = '0';
+      av.style.overflow = 'hidden';
+      renderAvatarTo(av, p.avatar, 'pl-'+p.id, 38);
       const info = el('div', 'player-info');
       const nameRow = el('div', 'player-name');
       nameRow.textContent = p.name;

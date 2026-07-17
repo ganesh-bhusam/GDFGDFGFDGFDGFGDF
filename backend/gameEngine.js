@@ -117,8 +117,8 @@ class Room {
       this.revealedHints = [];
       this.players.forEach((p) => (p.score = 0));
       this.changeState(this.type === 1 ? STATE.J : STATE.G, 0, null);
-    } else if (count < 2 && this.state.id !== STATE.G && this.state.id !== STATE.J) {
-      // Abort the game if only 1 real player remains and we aren't in the lobby
+    } else if (this.players.length < 2 && this.state.id !== STATE.G && this.state.id !== STATE.J) {
+      // Abort the game if only 1 player remains (including bots) and we aren't in the lobby
       if (this.state.id === STATE.K) {
         // Just cancel the start countdown
         clearTimeout(this.startCountdownTimer);
@@ -384,14 +384,17 @@ class Room {
     // Reveal scores
     const scoresFlat = [];
     for (const p of this.players) {
-      scoresFlat.push(p.id, p.score, p.deltaScore || 0);
+      scoresFlat.push(p.id, p.score, p.deltaScore || 0, p.guessTime || 0);
     }
     this.changeState(STATE.Z, 5, {
       word: this.currentWord,
       reason: this.roundEndReason,
       scores: scoresFlat,
     });
-    this.players.forEach((p) => (p.deltaScore = 0));
+    this.players.forEach((p) => {
+      p.deltaScore = 0;
+      p.guessTime = 0;
+    });
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       // next drawer in queue, or next round, or game over
@@ -530,8 +533,9 @@ class Room {
         if (player.guessed) return;
         player.guessed = true;
         this.guessedCount++;
+        player.guessTime = Math.round((Date.now() - this.startTime) / 1000);
         // score: drawer gets points + guesser gets time-based points
-        const remaining = Math.max(0, this.settings[2] - (Date.now() - this.startTime) / 1000);
+        const remaining = Math.max(0, this.settings[2] - player.guessTime);
         const guesserPoints = Math.round(50 + (remaining / this.settings[2]) * 250);
         const drawerPoints = Math.round(20 + (remaining / this.settings[2]) * 100);
         player.score += guesserPoints;

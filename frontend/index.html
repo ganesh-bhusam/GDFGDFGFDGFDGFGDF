@@ -273,36 +273,39 @@
         <canvas id="draw-canvas" width="800" height="600"></canvas>
 
         <!-- Dark mask screen overlay backdrop -->
-        <div class="overlay" id="canvas-overlay"></div>
+        <div class="overlay" id="canvas-overlay">
+          <div class="splat splat-1"></div>
+          <div class="splat splat-2"></div>
+          <div class="splat splat-3"></div>
+          <div class="splat splat-4"></div>
+          <div class="splat splat-5"></div>
+          <div class="splat splat-6"></div>
+        </div>
 
         <!-- Canvas overlay blocks content: Handled dynamically via JavaScript (lobby setups, round summaries, word choices) -->
         <div class="overlay-content" id="canvas-overlay-content">
           <!-- Text prompts (e.g. Choose a word) -->
           <div class="text" id="overlay-text"></div>
+          <!-- Timer bar for word selection -->
+          <div id="timer-bar"><div id="timer-fill"></div></div>
           <!-- Word choices cards list container -->
           <div class="words" id="overlay-words"></div>
           <!-- End-of-round reveal panel displays -->
-          <div class="reveal" id="overlay-reveal">
-            <p><span>The word was</span> <span class="word" id="reveal-word"></span></p>
-            <div class="reason" id="reveal-reason"></div>
-            <div class="reveal-scores" id="reveal-scores"></div>
+          <div id="overlay-reveal">
+            <p id="reveal-label">The word was</p>
+            <p id="reveal-word"></p>
+            <div id="reveal-reason"></div>
+            <div id="reveal-scores"></div>
           </div>
           <!-- End-of-match final scoreboard winner podiums display -->
-          <div class="result" id="overlay-result">
-            <div class="message"><b class="winner-name" id="winner-name"></b><span class="winner-text"> is the
-                winner!</span></div>
-            <div class="podests">
-              <div class="podest podest-2" id="podest-slot-2">
-                <div class="rank">2</div>
-              </div>
-              <div class="podest podest-1" id="podest-slot-1">
-                <div class="rank">1</div>
-              </div>
-              <div class="podest podest-3" id="podest-slot-3">
-                <div class="rank">3</div>
-              </div>
+          <div id="overlay-result">
+            <div class="message"><b id="winner-name"></b><span> is the winner!</span></div>
+            <div id="podests">
+              <div class="podest podest-2" id="podest-slot-2"><div class="podest-block"><span class="rank-tag">2</span></div></div>
+              <div class="podest podest-1" id="podest-slot-1"><div class="podest-block"><span class="rank-tag">1</span></div></div>
+              <div class="podest podest-3" id="podest-slot-3"><div class="podest-block"><span class="rank-tag">3</span></div></div>
             </div>
-            <div class="ranks" id="ranks-list"></div>
+            <div id="ranks-list"></div>
           </div>
 
           <!-- Private match room configuration dashboard and settings -->
