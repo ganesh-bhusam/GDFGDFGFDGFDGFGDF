@@ -1590,6 +1590,11 @@
     if (system) m.innerHTML = '<i>' + escapeHTML(author) + ' ' + escapeHTML(msg) + '</i>';
     else m.innerHTML = '<span class="author">' + escapeHTML(author) + ':</span>' + escapeHTML(msg);
     wrap.appendChild(m);
+
+    while (wrap.children.length > 100) {
+      wrap.removeChild(wrap.firstChild);
+    }
+    
     wrap.scrollTop = wrap.scrollHeight;
   }
   function addChatSystem(msg, kind) {
@@ -1597,6 +1602,12 @@
     const m = el('div', 'chat-msg system' + (kind ? ' ' + kind : ''));
     m.textContent = msg;
     wrap.appendChild(m);
+    
+    // Cap chat history to prevent DOM reflow lag
+    while (wrap.children.length > 100) {
+      wrap.removeChild(wrap.firstChild);
+    }
+    
     wrap.scrollTop = wrap.scrollHeight;
   }
 
