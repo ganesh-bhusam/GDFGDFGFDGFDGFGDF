@@ -1619,7 +1619,10 @@
 
     // Smart Chat Interception (Anti-Spam)
     const isHiddenMode = room && room.settings && room.settings[6] === 1;
-    if (!isHiddenMode && currentState === STATE.j && currentDrawerId !== me && wordHints && wordHints.length > 0) {
+    const myPlayer = players.find(p => p.id === me);
+    const hasGuessed = myPlayer && myPlayer.guessed;
+    
+    if (!isHiddenMode && currentState === STATE.j && currentDrawerId !== me && !hasGuessed && wordHints && wordHints.length > 0) {
       const targetLen = wordHints.filter(c => c !== ' ').length;
       const guessLen = t.replace(/\s/g, '').length;
       if (targetLen > 0 && guessLen !== targetLen) {
