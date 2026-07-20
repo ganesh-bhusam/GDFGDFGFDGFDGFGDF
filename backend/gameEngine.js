@@ -297,7 +297,7 @@ class Room {
       word = this.pendingChoices[choiceIdx];
     }
     if (!word) word = this.pendingChoices[0];
-    this.currentWord = word.toLowerCase();
+    this.currentWord = word.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     this.pastWords.add(this.currentWord);
     clearTimeout(this.timer);
 
